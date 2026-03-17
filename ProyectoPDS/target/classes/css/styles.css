@@ -1,0 +1,120 @@
+.root {
+    -fx-font-family: "Segoe UI", sans-serif;
+    -fx-text-fill: #2d3436;
+}
+
+
+.fondo-imagen {
+    -fx-background-image: url("../imagenes/fondo.jpg");
+    -fx-background-size: cover;
+    -fx-background-position: center;
+}
+
+
+.filtro-gris {
+    -fx-background-color: rgba(150, 150, 150, 0.40); 
+}
+
+
+.barra-superior {
+    -fx-background-color: rgba(0, 0, 0, 0.2);
+    -fx-padding: 12 25 12 25;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.titulo {
+    -fx-text-fill: white;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.6), 3, 0, 0, 1);
+}
+
+.btn-bloquear {
+    -fx-background-color: rgba(255, 255, 255, 0.2);
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-padding: 8 15 8 15;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+
+.btn-bloquear:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.3);
+}
+
+
+.scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.contenedor-listas {
+    -fx-padding: 20;
+}
+
+
+.lista-contenedor {
+    -fx-background-color: #e8eaf6;
+    -fx-background-radius: 10;
+    -fx-padding: 15;
+    -fx-spacing: 12;
+
+    -fx-min-width: 270;
+    -fx-max-width: 270;
+
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 5, 0, 0, 2);
+}
+
+
+.lista-contenedor .label {
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-text-fill: #37474f;
+}
+
+
+.tarjeta {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 6;
+
+    -fx-padding: 8;
+    -fx-spacing: 5;
+
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.08), 8, 0, 0, 3);
+    -fx-cursor: hand;
+}
+
+
+.tarjeta:hover {
+    -fx-background-color: #f1f3f4;
+}
+
+
+.texto-tarjeta {
+    -fx-text-fill: #424242;
+    -fx-font-size: 13px;
+}
+
+/* Etiqueta */
+.etiqueta-roja {
+    -fx-background-color: #ef5350;
+    -fx-background-radius: 4;
+    -fx-min-width: 40;
+    -fx-min-height: 6;
+}
+
+.button {
+    -fx-background-radius: 5;
+    -fx-cursor: hand;
+}
+
+.button-add-card {
+    -fx-background-color: transparent;
+    -fx-text-fill: #5e6c84;
+    -fx-cursor: hand;
+}
+
+.button-add-card:hover {
+    -fx-background-color: rgba(0,0,0,0.05);
+}
