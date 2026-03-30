@@ -1,5 +1,6 @@
 package pds.gestiontareas.application;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import pds.gestiontareas.domain.model.tablero.id.TableroId;
@@ -10,12 +11,13 @@ import pds.gestiontareas.domain.model.usuario.model.Email;
 @Service
 public class TableroService {
 
-    private final TableroRepository tableroRepository;
+	private final TableroRepository tableroRepository;
 
+    @Autowired
     public TableroService(TableroRepository tableroRepository) {
         this.tableroRepository = tableroRepository;
     }
-
+    
     public TableroId crearTablero(String nombreTablero, String emailCreador) {
         Email creador = new Email(emailCreador);
         Tablero nuevoTablero = new Tablero(nombreTablero, creador);
