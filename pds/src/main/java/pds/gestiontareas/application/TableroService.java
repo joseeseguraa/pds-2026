@@ -1,10 +1,13 @@
 package pds.gestiontareas.application;
 
+import org.springframework.stereotype.Service;
+
 import pds.gestiontareas.domain.model.tablero.id.TableroId;
 import pds.gestiontareas.domain.model.tablero.model.Tablero;
 import pds.gestiontareas.domain.model.tablero.repository.TableroRepository;
 import pds.gestiontareas.domain.model.usuario.model.Email;
 
+@Service
 public class TableroService {
 
     private final TableroRepository tableroRepository;

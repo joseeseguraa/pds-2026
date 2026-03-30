@@ -24,6 +24,9 @@ public class Tablero {
         this.listas = new ArrayList<>();
         this.historial = new ArrayList<>();
         
+        // Creamos la lista de tareas completadas
+        this.listas.add(new ListaTareas("Completadas"));
+        
         registrarAccion("Tablero '" + nombre + "' creado por " + creador.getDireccion());
     }
 
@@ -55,17 +58,20 @@ public class Tablero {
         registrarAccion("Tarjeta añadida a la lista: " + lista.getTitulo());
     }
     
-    public void moverTarjeta(String tarjetaId, String listaOrigenId, String listaDestinoId) {
+    public void moverTarjetaACompletadas(String tarjetaId, String listaOrigenId) {
+
+        ListaTareas listaCompletadas = listas.stream()
+                .filter(l -> l.getTitulo().equals("Completadas"))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No se encuentra la lista de Completadas"));
+
         ListaTareas origen = buscarListaPorId(listaOrigenId)
                 .orElseThrow(() -> new IllegalArgumentException("La lista de origen no existe"));
-                
-        ListaTareas destino = buscarListaPorId(listaDestinoId)
-                .orElseThrow(() -> new IllegalArgumentException("La lista de destino no existe"));
 
         origen.quitarTarjeta(tarjetaId);
-        destino.añadirTarjeta(tarjetaId);
-        
-        registrarAccion("Tarjeta movida de '" + origen.getTitulo() + "' a '" + destino.getTitulo() + "'");
+        listaCompletadas.añadirTarjeta(tarjetaId);
+
+        registrarAccion("Tarjeta marcada como completada y movida a la lista 'Completadas'");
     }
 
     private Optional<ListaTareas> buscarListaPorId(String listaId) {

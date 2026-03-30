@@ -8,6 +8,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.stereotype.Repository;
+
+@Repository
 public class InMemoryTableroRepository implements TableroRepository {
     
     private final Map<TableroId, Tablero> baseDeDatos = new HashMap<>();
