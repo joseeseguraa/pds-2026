@@ -11,7 +11,7 @@ public class Tablero {
     private TableroId id;
     private String nombre;
     @SuppressWarnings("unused")
-	private Email creador;
+    private Email creador;
     private boolean bloqueado;
     private List<ListaTareas> listas;
     private List<TrazaAccion> historial;
@@ -24,7 +24,6 @@ public class Tablero {
         this.listas = new ArrayList<>();
         this.historial = new ArrayList<>();
         
-        // Creamos la lista de tareas completadas
         this.listas.add(new ListaTareas("Completadas"));
         
         registrarAccion("Tablero '" + nombre + "' creado por " + creador.getDireccion());
@@ -59,7 +58,6 @@ public class Tablero {
     }
     
     public void moverTarjetaACompletadas(String tarjetaId, String listaOrigenId) {
-
         ListaTareas listaCompletadas = listas.stream()
                 .filter(l -> l.getTitulo().equals("Completadas"))
                 .findFirst()
@@ -77,11 +75,11 @@ public class Tablero {
     private Optional<ListaTareas> buscarListaPorId(String listaId) {
         return listas.stream().filter(l -> l.getId().equals(listaId)).findFirst();
     }
-
+    
     private void registrarAccion(String descripcion) {
         this.historial.add(new TrazaAccion(descripcion));
     }
-
+    
     public TableroId getId() { return id; }
     public String getNombre() { return nombre; }
     public boolean isBloqueado() { return bloqueado; }

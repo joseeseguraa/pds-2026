@@ -12,14 +12,25 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import pds.gestiontareas.application.TableroService;
+import pds.gestiontareas.application.TarjetaService;
 import pds.gestiontareas.domain.model.tablero.id.TableroId;
+import pds.gestiontareas.domain.model.tarjeta.id.TarjetaId;
 
 @Controller
 public class TableroController {
 
     @Autowired
     private TableroService tableroService;
+    
+    @Autowired
+    private TarjetaService tarjetaService;
 
+    private TableroId miTableroId;
+    
+    private VBox tarjetasPorHacer;
+    private VBox tarjetasEnProgreso;
+    private VBox tarjetasCompletadas;
+    
     @FXML
     private HBox contenedorListas;
 
@@ -30,16 +41,13 @@ public class TableroController {
     public void initialize() {
         System.out.println("Iniciando la interfaz y conectando con el dominio...");
 
-        TableroId miTableroId = tableroService.crearTablero("Mi Proyecto PDS", "alumno@um.es");
+        miTableroId = tableroService.crearTablero("Mi Proyecto PDS", "alumno@um.es");
         tableroService.añadirListaATablero(miTableroId, "Por Hacer");
         tableroService.añadirListaATablero(miTableroId, "En Progreso");
 
-        VBox tarjetasPorHacer = crearColumnaVisual("Por Hacer");
-        VBox tarjetasEnProgreso = crearColumnaVisual("En Progreso");
-        VBox tarjetasCompletadas = crearColumnaVisual("Completadas");
-
-        tarjetasPorHacer.getChildren().add(crearTarjetaVisual("Diseñar el modelo de dominio"));
-        tarjetasEnProgreso.getChildren().add(crearTarjetaVisual("Mostrar tarjetas en la interfaz"));
+        tarjetasPorHacer = crearColumnaVisual("Por Hacer");
+        tarjetasEnProgreso = crearColumnaVisual("En Progreso");
+        tarjetasCompletadas = crearColumnaVisual("Completadas");
     }
 
     private VBox crearColumnaVisual(String nombreLista) {
@@ -65,7 +73,20 @@ public class TableroController {
         btnAñadir.setMaxWidth(Double.MAX_VALUE);
         
         btnAñadir.setOnAction(e -> {
-            contenedorTarjetas.getChildren().add(crearTarjetaVisual("Nueva tarea de ejemplo"));
+            javafx.scene.control.TextInputDialog dialogo = new javafx.scene.control.TextInputDialog();
+            dialogo.setHeaderText("Nueva tarea para " + nombreLista);
+            dialogo.showAndWait().ifPresent(texto -> {
+                if(!texto.trim().isEmpty()) {
+
+                    TarjetaId nuevaId = tarjetaService.crearTarjeta(texto);
+
+                    tableroService.añadirTarjetaAListaPorNombre(miTableroId, nombreLista, nuevaId.getValor());
+
+                    contenedorTarjetas.getChildren().add(crearTarjetaVisual(texto, nuevaId.getValor(), nombreLista, contenedorTarjetas));
+                    
+                    System.out.println("Tarjeta enlazada al tablero en la lista: " + nombreLista);
+                }
+            });
         });
 
         columna.getChildren().addAll(titulo, contenedorTarjetas, btnAñadir);
@@ -78,14 +99,43 @@ public class TableroController {
         return contenedorTarjetas; 
     }
     
-    private VBox crearTarjetaVisual(String textoTarea) {
+    private VBox crearTarjetaVisual(String textoTarea, String tarjetaId, String nombreListaOrigen, VBox contenedorActual) {
         VBox tarjeta = new VBox();
-        tarjeta.setStyle("-fx-background-color: white; -fx-padding: 10; -fx-background-radius: 3; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 2, 0, 0, 1);");
+        tarjeta.getStyleClass().add("tarjeta");
         
         Label contenido = new Label(textoTarea);
         contenido.setWrapText(true);
+        contenido.getStyleClass().add("texto-tarjeta");
         
         tarjeta.getChildren().add(contenido);
+        
+        tarjeta.setOnMouseClicked(event -> {
+            
+            if (nombreListaOrigen.equals("Completadas")) {
+                return; 
+            }
+
+            javafx.scene.control.Alert alerta = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION);
+            alerta.setTitle("Opciones de la Tarea");
+            alerta.setHeaderText(textoTarea);
+            alerta.setContentText("¿Qué deseas hacer con esta tarjeta?");
+
+            javafx.scene.control.ButtonType btnCompletar = new javafx.scene.control.ButtonType("Completar Tarea");
+            javafx.scene.control.ButtonType btnCancelar = new javafx.scene.control.ButtonType("Cancelar", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
+
+            alerta.getButtonTypes().setAll(btnCompletar, btnCancelar);
+
+            alerta.showAndWait().ifPresent(tipo -> {
+                if (tipo == btnCompletar) {
+                    tableroService.moverTarjetaACompletadas(miTableroId, tarjetaId, nombreListaOrigen);
+                    
+                    contenedorActual.getChildren().remove(tarjeta); 
+                    tarjetasCompletadas.getChildren().add(tarjeta); 
+                    
+                    System.out.println("Tarjeta movida a Completadas");
+                }
+            });
+        });
         
         return tarjeta;
     }

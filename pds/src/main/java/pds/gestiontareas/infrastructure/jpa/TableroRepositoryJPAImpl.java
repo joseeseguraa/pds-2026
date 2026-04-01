@@ -1,13 +1,13 @@
 package pds.gestiontareas.infrastructure.jpa;
 
-import org.springframework.stereotype.Repository;
+
 import pds.gestiontareas.domain.model.tablero.model.Tablero;
 import pds.gestiontareas.domain.model.tablero.repository.TableroRepository;
 import pds.gestiontareas.domain.model.tablero.id.TableroId;
 
 import java.util.Optional;
 
-@Repository
+//@Repository Lo comento temp porque sino tengo conflictos y no me funciona
 public class TableroRepositoryJPAImpl implements TableroRepository {
 
     private final TableroJpaRepository jpaRepository;

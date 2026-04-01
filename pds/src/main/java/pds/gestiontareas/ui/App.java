@@ -1,31 +1,37 @@
 package pds.gestiontareas.ui;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
-@SpringBootApplication(scanBasePackages = "pds.gestiontareas")
 public class App extends Application {
 
     private ConfigurableApplicationContext springContext;
 
     @Override
     public void init() throws Exception {
-        springContext = SpringApplication.run(App.class);
+        springContext = SpringApplication.run(MainUI.class);
     }
 
     @Override
     public void start(Stage primaryStage) throws Exception {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/fxml/TableroView.fxml"));
-        
         fxmlLoader.setControllerFactory(springContext::getBean);
 
-        Scene scene = new Scene(fxmlLoader.load());
-        primaryStage.setTitle("Gestión de Tareas");
+        Parent root = fxmlLoader.load();
+
+        Scene scene = new Scene(root, 1200, 800); 
+
+        primaryStage.setMinWidth(900);  
+        primaryStage.setMinHeight(650); 
+        primaryStage.setResizable(true);
+        
+        primaryStage.setTitle("Gestión de Tareas PDS - Tablero Principal");
         primaryStage.setScene(scene);
         primaryStage.show();
     }
@@ -33,9 +39,6 @@ public class App extends Application {
     @Override
     public void stop() throws Exception {
         springContext.close();
-    }
-
-    public static void main(String[] args) {
-        launch(args);
+        Platform.exit();
     }
 }

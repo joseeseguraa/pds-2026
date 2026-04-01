@@ -1,6 +1,5 @@
 package pds.gestiontareas.application;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import pds.gestiontareas.domain.model.tablero.id.TableroId;
@@ -13,7 +12,6 @@ public class TableroService {
 
 	private final TableroRepository tableroRepository;
 
-    @Autowired
     public TableroService(TableroRepository tableroRepository) {
         this.tableroRepository = tableroRepository;
     }
@@ -41,6 +39,35 @@ public class TableroService {
                 .orElseThrow(() -> new IllegalArgumentException("El tablero no existe"));
                 
         tablero.bloquear();
+        tableroRepository.guardar(tablero);
+    }
+    
+    public void añadirTarjetaAListaPorNombre(TableroId tableroId, String nombreLista, String tarjetaId) {
+        Tablero tablero = tableroRepository.buscarPorId(tableroId)
+                .orElseThrow(() -> new IllegalArgumentException("El tablero no existe"));
+                
+        String listaId = tablero.getListas().stream()
+                .filter(l -> l.getTitulo().equals(nombreLista))
+                .findFirst()
+                .map(l -> l.getId())
+                .orElseThrow(() -> new IllegalArgumentException("La lista no existe"));
+
+        tablero.añadirTarjetaALista(tarjetaId, listaId);
+        tableroRepository.guardar(tablero);
+    }
+    
+    public void moverTarjetaACompletadas(TableroId tableroId, String tarjetaId, String nombreListaOrigen) {
+        Tablero tablero = tableroRepository.buscarPorId(tableroId)
+                .orElseThrow(() -> new IllegalArgumentException("El tablero no existe"));
+
+        String listaOrigenId = tablero.getListas().stream()
+                .filter(l -> l.getTitulo().equals(nombreListaOrigen))
+                .findFirst()
+                .map(l -> l.getId())
+                .orElseThrow(() -> new IllegalArgumentException("La lista de origen no existe"));
+
+        tablero.moverTarjetaACompletadas(tarjetaId, listaOrigenId);
+        
         tableroRepository.guardar(tablero);
     }
 }
