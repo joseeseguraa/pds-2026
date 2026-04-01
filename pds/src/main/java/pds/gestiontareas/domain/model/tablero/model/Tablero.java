@@ -57,20 +57,6 @@ public class Tablero {
         registrarAccion("Tarjeta añadida a la lista: " + lista.getTitulo());
     }
     
-    public void moverTarjetaACompletadas(String tarjetaId, String listaOrigenId) {
-        ListaTareas listaCompletadas = listas.stream()
-                .filter(l -> l.getTitulo().equals("Completadas"))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No se encuentra la lista de Completadas"));
-
-        ListaTareas origen = buscarListaPorId(listaOrigenId)
-                .orElseThrow(() -> new IllegalArgumentException("La lista de origen no existe"));
-
-        origen.quitarTarjeta(tarjetaId);
-        listaCompletadas.añadirTarjeta(tarjetaId);
-
-        registrarAccion("Tarjeta marcada como completada y movida a la lista 'Completadas'");
-    }
 
     private Optional<ListaTareas> buscarListaPorId(String listaId) {
         return listas.stream().filter(l -> l.getId().equals(listaId)).findFirst();
@@ -78,6 +64,19 @@ public class Tablero {
     
     private void registrarAccion(String descripcion) {
         this.historial.add(new TrazaAccion(descripcion));
+    }
+    
+    public void moverTarjeta(String tarjetaId, String listaOrigenId, String listaDestinoId) {
+        ListaTareas origen = buscarListaPorId(listaOrigenId)
+                .orElseThrow(() -> new IllegalArgumentException("La lista de origen no existe"));
+                
+        ListaTareas destino = buscarListaPorId(listaDestinoId)
+                .orElseThrow(() -> new IllegalArgumentException("La lista de destino no existe"));
+
+        origen.quitarTarjeta(tarjetaId);
+        destino.añadirTarjeta(tarjetaId);
+
+        registrarAccion("Tarjeta movida de '" + origen.getTitulo() + "' a '" + destino.getTitulo() + "'");
     }
     
     public TableroId getId() { return id; }

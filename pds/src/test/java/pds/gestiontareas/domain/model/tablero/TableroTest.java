@@ -48,25 +48,4 @@ class TableroTest {
         assertNotNull(exception.getMessage());
     }
 
-    @Test
-    void testMoverTarjetaACompletadas() {
-        tablero.añadirLista("DOING");
-        ListaTareas listaDoing = tablero.getListas().stream()
-                .filter(l -> l.getTitulo().equals("DOING"))
-                .findFirst().get();
-        String idListaDoing = listaDoing.getId();
-        
-        tablero.añadirTarjetaALista("tarjeta-999", idListaDoing);
-
-        tablero.moverTarjetaACompletadas("tarjeta-999", idListaDoing);
-
-        assertFalse(listaDoing.getTarjetasIds().contains("tarjeta-999"), "La tarjeta debería haber salido de DOING");
-
-        ListaTareas listaCompletadas = tablero.getListas().stream()
-                .filter(l -> l.getTitulo().equals("Completadas"))
-                .findFirst()
-                .get();
-        
-        assertTrue(listaCompletadas.getTarjetasIds().contains("tarjeta-999"), "La tarjeta debería estar en Completadas");
-    }
 }

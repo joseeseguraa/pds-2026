@@ -26,6 +26,26 @@ public abstract class Tarjeta {
     public void añadirEtiqueta(Etiqueta etiqueta) {
         this.etiquetas.add(etiqueta);
     }
+    
+    public String getDescripcion() { 
+        return descripcion; 
+    }
+    
+    public void cambiarDescripcion(String nuevaDescripcion) { 
+        this.descripcion = nuevaDescripcion; 
+    }
+    
+    public java.util.List<Etiqueta> getEtiquetas() {
+        return etiquetas;
+    }
+    
+    public boolean tieneEtiqueta(String colorHex) {
+        return etiquetas.stream().anyMatch(e -> e.getColor().equals(colorHex));
+    }
+
+    public void quitarEtiqueta(String colorHex) {
+        etiquetas.removeIf(e -> e.getColor().equals(colorHex));
+    }
 
     public TarjetaId getId() { return id; }
     public String getTitulo() { return titulo; }

@@ -56,18 +56,30 @@ public class TableroService {
         tableroRepository.guardar(tablero);
     }
     
-    public void moverTarjetaACompletadas(TableroId tableroId, String tarjetaId, String nombreListaOrigen) {
+    
+    public void moverTarjeta(TableroId tableroId, String tarjetaId, String nombreListaOrigen, String nombreListaDestino) {
         Tablero tablero = tableroRepository.buscarPorId(tableroId)
                 .orElseThrow(() -> new IllegalArgumentException("El tablero no existe"));
 
         String listaOrigenId = tablero.getListas().stream()
-                .filter(l -> l.getTitulo().equals(nombreListaOrigen))
-                .findFirst()
-                .map(l -> l.getId())
+                .filter(l -> l.getTitulo().equals(nombreListaOrigen)).findFirst().map(l -> l.getId())
                 .orElseThrow(() -> new IllegalArgumentException("La lista de origen no existe"));
 
-        tablero.moverTarjetaACompletadas(tarjetaId, listaOrigenId);
-        
+        String listaDestinoId = tablero.getListas().stream()
+                .filter(l -> l.getTitulo().equals(nombreListaDestino)).findFirst().map(l -> l.getId())
+                .orElseThrow(() -> new IllegalArgumentException("La lista de destino no existe"));
+
+        tablero.moverTarjeta(tarjetaId, listaOrigenId, listaDestinoId);
         tableroRepository.guardar(tablero);
+    }
+
+
+    public java.util.List<String> obtenerNombresListas(TableroId tableroId) {
+        Tablero tablero = tableroRepository.buscarPorId(tableroId)
+                .orElseThrow(() -> new IllegalArgumentException("El tablero no existe"));
+                
+        return tablero.getListas().stream()
+                .map(l -> l.getTitulo())
+                .collect(java.util.stream.Collectors.toList());
     }
 }
