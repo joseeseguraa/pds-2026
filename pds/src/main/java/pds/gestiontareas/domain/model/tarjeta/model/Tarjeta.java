@@ -35,7 +35,7 @@ public abstract class Tarjeta {
         this.descripcion = nuevaDescripcion; 
     }
     
-    public java.util.List<Etiqueta> getEtiquetas() {
+    public List<Etiqueta> getEtiquetas() {
         return etiquetas;
     }
     

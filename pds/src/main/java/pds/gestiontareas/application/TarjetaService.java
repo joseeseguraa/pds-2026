@@ -21,6 +21,12 @@ public class TarjetaService {
         return nuevaTarjeta.getId();
     }
     
+    public String obtenerTituloTarjeta(String tarjetaIdStr) {
+        return tarjetaRepository.buscarPorId(new TarjetaId(tarjetaIdStr))
+                .map(t -> t.getTitulo())
+                .orElse("Tarea desconocida");
+    }
+    
     public Tarjeta obtenerTarjeta(String tarjetaId) {
         return tarjetaRepository.buscarPorId(new TarjetaId(tarjetaId))
                 .orElseThrow(() -> new IllegalArgumentException("Tarjeta no encontrada"));
@@ -46,4 +52,5 @@ public class TarjetaService {
         tarjeta.quitarEtiqueta(colorHex);
         tarjetaRepository.guardar(tarjeta);
     }
+
 }

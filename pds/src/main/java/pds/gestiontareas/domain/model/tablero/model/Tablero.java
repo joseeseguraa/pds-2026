@@ -28,6 +28,15 @@ public class Tablero {
         
         registrarAccion("Tablero '" + nombre + "' creado por " + creador.getDireccion());
     }
+    
+    public Tablero(TableroId id, String nombre, Email creador, boolean bloqueado, List<ListaTareas> listas) {
+        this.id = id;
+        this.nombre = nombre;
+        this.creador = creador;
+        this.bloqueado = bloqueado;
+        this.listas = listas;
+        this.historial = new ArrayList<>();
+    }
 
     public void bloquear() {
         this.bloqueado = true;
@@ -84,4 +93,7 @@ public class Tablero {
     public boolean isBloqueado() { return bloqueado; }
     public List<ListaTareas> getListas() { return listas; }
     public List<TrazaAccion> getHistorial() { return historial; }
+
+    public Email getCreador() { return creador; }
 }
+

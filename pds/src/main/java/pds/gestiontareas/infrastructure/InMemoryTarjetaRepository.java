@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-@Repository
+// @Repository
 public class InMemoryTarjetaRepository implements TarjetaRepository {
     
     private final Map<TarjetaId, Tarjeta> baseDeDatos = new HashMap<>();

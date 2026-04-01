@@ -1,5 +1,8 @@
 package pds.gestiontareas.application;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
 
 import pds.gestiontareas.domain.model.tablero.id.TableroId;
@@ -72,14 +75,23 @@ public class TableroService {
         tablero.moverTarjeta(tarjetaId, listaOrigenId, listaDestinoId);
         tableroRepository.guardar(tablero);
     }
+    
+    public List<Tablero> obtenerTodos() {
+        return tableroRepository.buscarTodos();
+    }
+
+    public Tablero obtenerTablero(TableroId tableroId) {
+        return tableroRepository.buscarPorId(tableroId)
+                .orElseThrow(() -> new IllegalArgumentException("El tablero no existe"));
+    }
 
 
-    public java.util.List<String> obtenerNombresListas(TableroId tableroId) {
+    public List<String> obtenerNombresListas(TableroId tableroId) {
         Tablero tablero = tableroRepository.buscarPorId(tableroId)
                 .orElseThrow(() -> new IllegalArgumentException("El tablero no existe"));
                 
         return tablero.getListas().stream()
                 .map(l -> l.getTitulo())
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
     }
 }

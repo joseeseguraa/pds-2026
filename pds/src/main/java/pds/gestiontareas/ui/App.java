@@ -7,15 +7,21 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
+@SpringBootApplication(scanBasePackages = "pds.gestiontareas")
+@EnableJpaRepositories(basePackages = "pds.gestiontareas.infrastructure.jpa")
+@EntityScan(basePackages = "pds.gestiontareas.infrastructure.jpa.entity")
 public class App extends Application {
 
     private ConfigurableApplicationContext springContext;
 
     @Override
     public void init() throws Exception {
-        springContext = SpringApplication.run(MainUI.class);
+        springContext = SpringApplication.run(App.class);
     }
 
     @Override

@@ -14,7 +14,18 @@ public class ListaTareas {
         this.titulo = titulo;
         this.tarjetasIds = new ArrayList<>();
     }
-
+    
+    public ListaTareas(String id, String titulo, List<String> tarjetasIds) {
+        this.id = id;
+        this.titulo = titulo;
+        
+        if (tarjetasIds != null) {
+            this.tarjetasIds = new ArrayList<>(tarjetasIds);
+        } else {
+            this.tarjetasIds = new ArrayList<>();
+        }
+    }
+    
     public String getId() { return id; }
     public String getTitulo() { return titulo; }
     

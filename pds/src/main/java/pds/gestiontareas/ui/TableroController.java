@@ -1,12 +1,23 @@
 package pds.gestiontareas.ui;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar.ButtonData;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ColorPicker;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
@@ -14,7 +25,11 @@ import javafx.scene.paint.Color;
 import pds.gestiontareas.application.TableroService;
 import pds.gestiontareas.application.TarjetaService;
 import pds.gestiontareas.domain.model.tablero.id.TableroId;
+import pds.gestiontareas.domain.model.tablero.model.ListaTareas;
+import pds.gestiontareas.domain.model.tablero.model.Tablero;
 import pds.gestiontareas.domain.model.tarjeta.id.TarjetaId;
+import pds.gestiontareas.domain.model.tarjeta.model.Etiqueta;
+import pds.gestiontareas.domain.model.tarjeta.model.Tarjeta;
 
 @Controller
 public class TableroController {
@@ -27,7 +42,7 @@ public class TableroController {
 
     private TableroId miTableroId;
     
-    private java.util.Map<String, VBox> columnasVisuales = new java.util.HashMap<>();
+    private Map<String, VBox> columnasVisuales = new HashMap<>();
     
     private VBox tarjetasPorHacer;
     private VBox tarjetasEnProgreso;
@@ -38,14 +53,43 @@ public class TableroController {
 
     @FXML
     private Region etiquetaColor;
-
+    
     @FXML
     public void initialize() {
-        System.out.println("Iniciando la interfaz y conectando con el dominio...");
+        System.out.println("Iniciando la interfaz y comprobando la Base de Datos...");
 
-        miTableroId = tableroService.crearTablero("Mi Proyecto PDS", "alumno@um.es");
-        tableroService.añadirListaATablero(miTableroId, "Por Hacer");
-        tableroService.añadirListaATablero(miTableroId, "En Progreso");
+        Tablero tableroReal = null;
+        
+        List<Tablero> tablerosGuardados = tableroService.obtenerTodos(); 
+        
+        if (!tablerosGuardados.isEmpty()) {
+            tableroReal = tablerosGuardados.get(0);
+            miTableroId = tableroReal.getId();
+            System.out.println("¡Tablero recuperado del disco duro!");
+        } else {
+            System.out.println("Creando tablero nuevo por primera vez...");
+            miTableroId = tableroService.crearTablero("Mi Proyecto PDS", "alumno@um.es");
+            tableroService.añadirListaATablero(miTableroId, "Por Hacer");
+            tableroService.añadirListaATablero(miTableroId, "En Progreso");
+            tableroReal = tableroService.obtenerTablero(miTableroId);
+        }
+
+        for (ListaTareas lista : tableroReal.getListas()) {
+            VBox contenedorDeEstaLista = crearColumnaVisual(lista.getTitulo());
+            
+            if (lista.getTitulo().equals("Por Hacer")) tarjetasPorHacer = contenedorDeEstaLista;
+            if (lista.getTitulo().equals("En Progreso")) tarjetasEnProgreso = contenedorDeEstaLista;
+            if (lista.getTitulo().equals("Completadas")) tarjetasCompletadas = contenedorDeEstaLista;
+
+            if (lista.getTarjetasIds() != null) {
+                for (String idTarjeta : lista.getTarjetasIds()) {
+                    String tituloGuardado = tarjetaService.obtenerTituloTarjeta(idTarjeta);
+                    contenedorDeEstaLista.getChildren().add(
+                        crearTarjetaVisual(tituloGuardado, idTarjeta, lista.getTitulo(), contenedorDeEstaLista)
+                    );
+                }
+            }
+        }
 
         tarjetasPorHacer = crearColumnaVisual("Por Hacer");
         tarjetasEnProgreso = crearColumnaVisual("En Progreso");
@@ -77,7 +121,7 @@ public class TableroController {
         btnAñadir.setMaxWidth(Double.MAX_VALUE);
         
         btnAñadir.setOnAction(e -> {
-            javafx.scene.control.TextInputDialog dialogo = new javafx.scene.control.TextInputDialog();
+            TextInputDialog dialogo = new TextInputDialog();
             dialogo.setHeaderText("Nueva tarea para " + nombreLista);
             dialogo.showAndWait().ifPresent(texto -> {
                 if(!texto.trim().isEmpty()) {
@@ -96,7 +140,7 @@ public class TableroController {
         columna.getChildren().addAll(titulo, contenedorTarjetas, btnAñadir);
         
         if (contenedorListas != null) {
-            contenedorListas.setAlignment(javafx.geometry.Pos.TOP_LEFT);
+            contenedorListas.setAlignment(Pos.TOP_LEFT);
             contenedorListas.getChildren().add(columna);
         }
         
@@ -106,52 +150,52 @@ public class TableroController {
     }
     
 
-    private javafx.scene.layout.VBox crearTarjetaVisual(String textoTarea, String tarjetaId, String nombreListaOrigen, javafx.scene.layout.VBox contenedorActual) {
-        javafx.scene.layout.VBox tarjeta = new javafx.scene.layout.VBox();
+    private VBox crearTarjetaVisual(String textoTarea, String tarjetaId, String nombreListaOrigen, VBox contenedorActual) {
+        VBox tarjeta = new VBox();
         tarjeta.getStyleClass().add("tarjeta");
 
         final String[] listaActual = {nombreListaOrigen};
-        final javafx.scene.layout.VBox[] cajaActual = {contenedorActual};
+        final VBox[] cajaActual = {contenedorActual};
 
-        javafx.scene.layout.HBox contenedorEtiquetas = new javafx.scene.layout.HBox(5);
-        pds.gestiontareas.domain.model.tarjeta.model.Tarjeta datosTarjeta = tarjetaService.obtenerTarjeta(tarjetaId);
-        for (pds.gestiontareas.domain.model.tarjeta.model.Etiqueta etiqueta : datosTarjeta.getEtiquetas()) {
-            javafx.scene.layout.Region rectColor = new javafx.scene.layout.Region();
+        HBox contenedorEtiquetas = new HBox(5);
+        Tarjeta datosTarjeta = tarjetaService.obtenerTarjeta(tarjetaId);
+        for (Etiqueta etiqueta : datosTarjeta.getEtiquetas()) {
+            Region rectColor = new Region();
             rectColor.setStyle("-fx-background-color: " + etiqueta.getColor() + "; -fx-min-width: 40; -fx-min-height: 8; -fx-background-radius: 4;");
             contenedorEtiquetas.getChildren().add(rectColor);
         }
 
-        javafx.scene.control.Label contenido = new javafx.scene.control.Label(textoTarea);
+        Label contenido = new Label(textoTarea);
         contenido.setWrapText(true);
         contenido.getStyleClass().add("texto-tarjeta");
         
         tarjeta.getChildren().addAll(contenedorEtiquetas, contenido);
 
         tarjeta.setOnMouseClicked(event -> {
-            pds.gestiontareas.domain.model.tarjeta.model.Tarjeta datosActualizados = tarjetaService.obtenerTarjeta(tarjetaId);
+            Tarjeta datosActualizados = tarjetaService.obtenerTarjeta(tarjetaId);
 
-            javafx.scene.control.Dialog<javafx.scene.control.ButtonType> dialog = new javafx.scene.control.Dialog<>();
+            Dialog<ButtonType> dialog = new Dialog<>();
             dialog.setTitle("Detalles de la Tarjeta");
             dialog.setHeaderText("Tarea: " + textoTarea);
 
-            javafx.scene.layout.VBox contenidoDialogo = new javafx.scene.layout.VBox(10);
+            VBox contenidoDialogo = new VBox(10);
 
-            javafx.scene.control.Label lblDesc = new javafx.scene.control.Label("Descripción:");
-            javafx.scene.control.TextArea txtDesc = new javafx.scene.control.TextArea(datosActualizados.getDescripcion());
+            Label lblDesc = new Label("Descripción:");
+            TextArea txtDesc = new TextArea(datosActualizados.getDescripcion());
             txtDesc.setWrapText(true);
             txtDesc.setPrefRowCount(3);
 
-            javafx.scene.control.Label lblColor = new javafx.scene.control.Label("Gestionar Etiquetas:");
-            javafx.scene.control.ColorPicker colorPicker = new javafx.scene.control.ColorPicker(javafx.scene.paint.Color.web("#ef5350"));
-            javafx.scene.control.Button btnAñadirColor = new javafx.scene.control.Button("Añadir Color");
-            javafx.scene.control.Button btnQuitarColor = new javafx.scene.control.Button("Quitar Color");
-            javafx.scene.layout.HBox cajaColor = new javafx.scene.layout.HBox(10, colorPicker, btnAñadirColor, btnQuitarColor);
+            Label lblColor = new Label("Gestionar Etiquetas:");
+            ColorPicker colorPicker = new ColorPicker(Color.web("#ef5350"));
+            Button btnAñadirColor = new Button("Añadir Color");
+            Button btnQuitarColor = new Button("Quitar Color");
+            HBox cajaColor = new HBox(10, colorPicker, btnAñadirColor, btnQuitarColor);
 
             btnAñadirColor.setOnAction(e -> {
                 String hexColor = "#" + colorPicker.getValue().toString().substring(2, 8);
                 if (!tarjetaService.obtenerTarjeta(tarjetaId).tieneEtiqueta(hexColor)) {
                     tarjetaService.añadirEtiqueta(tarjetaId, "Etiqueta", hexColor);
-                    javafx.scene.layout.Region nuevaEtiqueta = new javafx.scene.layout.Region();
+                    Region nuevaEtiqueta = new Region();
                     nuevaEtiqueta.setStyle("-fx-background-color: " + hexColor + "; -fx-min-width: 40; -fx-min-height: 8; -fx-background-radius: 4;");
                     contenedorEtiquetas.getChildren().add(nuevaEtiqueta);
                 }
@@ -161,26 +205,26 @@ public class TableroController {
                 String hexColor = "#" + colorPicker.getValue().toString().substring(2, 8);
                 tarjetaService.quitarEtiqueta(tarjetaId, hexColor);
                 contenedorEtiquetas.getChildren().clear();
-                for (pds.gestiontareas.domain.model.tarjeta.model.Etiqueta etiqueta : tarjetaService.obtenerTarjeta(tarjetaId).getEtiquetas()) {
-                    javafx.scene.layout.Region rectColor = new javafx.scene.layout.Region();
+                for (Etiqueta etiqueta : tarjetaService.obtenerTarjeta(tarjetaId).getEtiquetas()) {
+                    Region rectColor = new Region();
                     rectColor.setStyle("-fx-background-color: " + etiqueta.getColor() + "; -fx-min-width: 40; -fx-min-height: 8; -fx-background-radius: 4;");
                     contenedorEtiquetas.getChildren().add(rectColor);
                 }
             });
 
-            javafx.scene.control.Label lblMover = new javafx.scene.control.Label("Mover a lista:");
-            javafx.scene.control.ComboBox<String> comboListas = new javafx.scene.control.ComboBox<>();
+            Label lblMover = new Label("Mover a lista:");
+            ComboBox<String> comboListas = new ComboBox<>();
             comboListas.getItems().addAll(tableroService.obtenerNombresListas(miTableroId)); 
             comboListas.setValue(listaActual[0]); 
             
-            javafx.scene.layout.HBox cajaMover = new javafx.scene.layout.HBox(10, lblMover, comboListas);
-            cajaMover.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+            HBox cajaMover = new HBox(10, lblMover, comboListas);
+            cajaMover.setAlignment(Pos.CENTER_LEFT);
 
             contenidoDialogo.getChildren().addAll(lblDesc, txtDesc, lblColor, cajaColor, cajaMover);
             dialog.getDialogPane().setContent(contenidoDialogo);
 
-            javafx.scene.control.ButtonType btnGuardar = new javafx.scene.control.ButtonType("Guardar Cambios", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
-            javafx.scene.control.ButtonType btnCancelar = new javafx.scene.control.ButtonType("Cancelar", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
+            ButtonType btnGuardar = new ButtonType("Guardar Cambios", ButtonData.OK_DONE);
+            ButtonType btnCancelar = new ButtonType("Cancelar", ButtonData.CANCEL_CLOSE);
 
             dialog.getDialogPane().getButtonTypes().setAll(btnGuardar, btnCancelar);
 
@@ -194,7 +238,7 @@ public class TableroController {
                         tableroService.moverTarjeta(miTableroId, tarjetaId, listaActual[0], listaDestino);
                         
                         cajaActual[0].getChildren().remove(tarjeta); 
-                        javafx.scene.layout.VBox nuevaCaja = columnasVisuales.get(listaDestino);
+                        VBox nuevaCaja = columnasVisuales.get(listaDestino);
                         
                         if (nuevaCaja != null) {
                             nuevaCaja.getChildren().add(tarjeta); 
@@ -212,13 +256,13 @@ public class TableroController {
     
     
     private void crearBotonAñadirLista() {
-        javafx.scene.control.Button btnAñadirLista = new javafx.scene.control.Button("+ Añadir otra lista");
+        Button btnAñadirLista = new Button("+ Añadir otra lista");
         btnAñadirLista.setStyle("-fx-background-color: rgba(255, 255, 255, 0.5); -fx-text-fill: #172b4d; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 10;");
         btnAñadirLista.setPrefWidth(250);
         btnAñadirLista.setMinHeight(40);
 
         btnAñadirLista.setOnAction(e -> {
-            javafx.scene.control.TextInputDialog dialogo = new javafx.scene.control.TextInputDialog();
+            TextInputDialog dialogo = new TextInputDialog();
             dialogo.setTitle("Nueva Lista");
             dialogo.setHeaderText("Crear una nueva lista de tareas");
             dialogo.setContentText("Nombre de la lista:");
