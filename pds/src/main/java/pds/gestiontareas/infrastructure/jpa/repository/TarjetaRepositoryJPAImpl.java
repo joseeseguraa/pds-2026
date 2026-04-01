@@ -1,14 +1,19 @@
 package pds.gestiontareas.infrastructure.jpa.repository;
 
 import org.springframework.stereotype.Repository;
+
+import pds.gestiontareas.domain.model.tarjeta.model.Etiqueta;
 import pds.gestiontareas.domain.model.tarjeta.model.Tarjeta;
 import pds.gestiontareas.domain.model.tarjeta.model.TarjetaTarea;
 import pds.gestiontareas.domain.model.tarjeta.repository.TarjetaRepository;
 import pds.gestiontareas.domain.model.tarjeta.id.TarjetaId;
 import pds.gestiontareas.infrastructure.jpa.TarjetaJpaRepository;
+import pds.gestiontareas.infrastructure.jpa.entity.EtiquetaEmbeddable;
 import pds.gestiontareas.infrastructure.jpa.entity.TarjetaEntity;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Repository 
 public class TarjetaRepositoryJPAImpl implements TarjetaRepository {
@@ -26,18 +31,43 @@ public class TarjetaRepositoryJPAImpl implements TarjetaRepository {
         entity.setId(tarjeta.getId().getValor());
         entity.setTitulo(tarjeta.getTitulo());
         entity.setDescripcion(tarjeta.getDescripcion());
+        entity.setCompletada(tarjeta.isCompletada());
+        
+        List<EtiquetaEmbeddable> embeddables = tarjeta.getEtiquetas().stream()
+                .map(e -> new EtiquetaEmbeddable(e.getNombre(), e.getColor()))
+                .collect(Collectors.toList());
+                
+        entity.setEtiquetas(embeddables);
         
         jpaRepository.save(entity);
     }
 
     @Override
     public Optional<Tarjeta> buscarPorId(TarjetaId id) {
-        return jpaRepository.findById(id.getValor()).map(entity -> 
-            new TarjetaTarea(
-                new TarjetaId(entity.getId()),
-                entity.getTitulo(),
-                entity.getDescripcion()
-            )
-        );
+        return jpaRepository.findById(id.getValor()).map(entity -> {
+            TarjetaTarea tarjeta = new TarjetaTarea(
+                    new TarjetaId(entity.getId()),
+                    entity.getTitulo(),
+                    entity.getDescripcion()
+                );
+                
+                if (entity.isCompletada()) {
+                    tarjeta.marcarCompletada();
+                }
+                
+                if (entity.getEtiquetas() != null) {
+                    for (EtiquetaEmbeddable emb : entity.getEtiquetas()) {
+                        tarjeta.añadirEtiqueta(new Etiqueta(emb.getNombre(), emb.getColorHex()));
+                    }
+                }
+                
+                return tarjeta;
+            });
     }
+    
+    @Override
+    public void eliminar(TarjetaId id) {
+        jpaRepository.deleteById(id.getValor());
+    }
+    
 }

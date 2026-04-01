@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import pds.gestiontareas.domain.model.tablero.id.TableroId;
+import pds.gestiontareas.domain.model.tablero.model.ListaTareas;
 import pds.gestiontareas.domain.model.tablero.model.Tablero;
 import pds.gestiontareas.domain.model.tablero.repository.TableroRepository;
 import pds.gestiontareas.domain.model.usuario.model.Email;
@@ -94,4 +95,18 @@ public class TableroService {
                 .map(l -> l.getTitulo())
                 .collect(Collectors.toList());
     }
+    
+    public void eliminarTarjetaDeLista(TableroId tableroId, String nombreLista, String tarjetaIdStr) {
+        Tablero tablero = obtenerTablero(tableroId);
+        
+        for (ListaTareas lista : tablero.getListas()) {
+            if (lista.getTitulo().equals(nombreLista)) {
+                lista.getTarjetasIds().remove(tarjetaIdStr);
+                break;
+            }
+        }
+        
+        tableroRepository.guardar(tablero);
+    }
+    
 }

@@ -23,4 +23,12 @@ public class InMemoryTarjetaRepository implements TarjetaRepository {
     public Optional<Tarjeta> buscarPorId(TarjetaId id) {
         return Optional.ofNullable(baseDeDatos.get(id));
     }
+
+	@Override
+	public void eliminar(TarjetaId id) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
 }

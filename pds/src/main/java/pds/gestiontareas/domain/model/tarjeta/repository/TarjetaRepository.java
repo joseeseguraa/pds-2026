@@ -7,4 +7,6 @@ import java.util.Optional;
 public interface TarjetaRepository {
     void guardar(Tarjeta tarjeta);
     Optional<Tarjeta> buscarPorId(TarjetaId id);
+    
+    void eliminar(TarjetaId id);
 }

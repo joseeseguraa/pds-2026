@@ -1,8 +1,8 @@
 package pds.gestiontareas.infrastructure.jpa.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "tarjetas")
@@ -13,6 +13,11 @@ public class TarjetaEntity {
     
     private String titulo;
     private String descripcion;
+    private boolean completada;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "tarjetas_etiquetas", joinColumns = @JoinColumn(name = "tarjeta_id"))
+    private List<EtiquetaEmbeddable> etiquetas = new ArrayList<>();
 
     public TarjetaEntity() {}
 
@@ -24,4 +29,10 @@ public class TarjetaEntity {
 
     public String getDescripcion() { return descripcion; }
     public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+
+    public boolean isCompletada() { return completada; }
+    public void setCompletada(boolean completada) { this.completada = completada; }
+
+    public List<EtiquetaEmbeddable> getEtiquetas() { return etiquetas; }
+    public void setEtiquetas(List<EtiquetaEmbeddable> etiquetas) { this.etiquetas = etiquetas; }
 }

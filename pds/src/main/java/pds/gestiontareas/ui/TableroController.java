@@ -7,6 +7,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -90,11 +91,6 @@ public class TableroController {
                 }
             }
         }
-
-        tarjetasPorHacer = crearColumnaVisual("Por Hacer");
-        tarjetasEnProgreso = crearColumnaVisual("En Progreso");
-        tarjetasCompletadas = crearColumnaVisual("Completadas");
-
         crearBotonAñadirLista();
     }
 
@@ -225,8 +221,26 @@ public class TableroController {
 
             ButtonType btnGuardar = new ButtonType("Guardar Cambios", ButtonData.OK_DONE);
             ButtonType btnCancelar = new ButtonType("Cancelar", ButtonData.CANCEL_CLOSE);
+            ButtonType btnEliminar = new ButtonType("Eliminar Tarjeta", ButtonData.LEFT);
 
-            dialog.getDialogPane().getButtonTypes().setAll(btnGuardar, btnCancelar);
+            dialog.getDialogPane().getButtonTypes().setAll(btnEliminar, btnGuardar, btnCancelar);
+
+            Button botonEliminarInterfaz = (Button) dialog.getDialogPane().lookupButton(btnEliminar);
+            if (botonEliminarInterfaz != null) {
+                
+                botonEliminarInterfaz.addEventFilter(ActionEvent.ACTION, e -> {
+                    
+                    tableroService.eliminarTarjetaDeLista(miTableroId, listaActual[0], tarjetaId);
+                    tarjetaService.eliminarTarjeta(tarjetaId);
+                    
+                    cajaActual[0].getChildren().remove(tarjeta); 
+                    System.out.println("🗑️ Tarjeta eliminada con éxito");
+                    
+                    dialog.close();
+                    
+                    e.consume();
+                });
+            }
 
             dialog.showAndWait().ifPresent(tipo -> {
                 if (tipo == btnGuardar) {

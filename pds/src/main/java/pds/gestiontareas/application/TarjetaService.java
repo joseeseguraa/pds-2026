@@ -52,5 +52,9 @@ public class TarjetaService {
         tarjeta.quitarEtiqueta(colorHex);
         tarjetaRepository.guardar(tarjeta);
     }
+    
+    public void eliminarTarjeta(String tarjetaIdStr) {
+        tarjetaRepository.eliminar(new TarjetaId(tarjetaIdStr));
+    }
 
 }
