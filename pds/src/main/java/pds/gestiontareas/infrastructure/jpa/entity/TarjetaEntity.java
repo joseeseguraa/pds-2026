@@ -11,6 +11,7 @@ public class TarjetaEntity {
     @Id
     private String id;
     
+    private String tipo;
     private String titulo;
     private String descripcion;
     private boolean completada;
@@ -42,4 +43,7 @@ public class TarjetaEntity {
 
     public List<ItemChecklistEmbeddable> getChecklist() { return checklist; }
     public void setChecklist(List<ItemChecklistEmbeddable> checklist) { this.checklist = checklist; }
+    
+    public String getTipo() { return tipo; }
+    public void setTipo(String tipo) { this.tipo = tipo; }
 }

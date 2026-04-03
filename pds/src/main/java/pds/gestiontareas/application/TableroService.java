@@ -148,4 +148,10 @@ public class TableroService {
         tableroRepository.guardar(tablero);
     }
     
+    public List<Tablero> obtenerTablerosPorEmail(String email) {
+        return tableroRepository.buscarTodos().stream()
+                .filter(t -> t.getCreador() != null && t.getCreador().getDireccion().equalsIgnoreCase(email.trim()))
+                .collect(Collectors.toList());
+    }
+    
 }

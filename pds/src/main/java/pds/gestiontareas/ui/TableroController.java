@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -12,11 +14,11 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.ColorPicker;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
@@ -40,6 +42,7 @@ import pds.gestiontareas.domain.model.tarjeta.id.TarjetaId;
 import pds.gestiontareas.domain.model.tarjeta.model.Etiqueta;
 import pds.gestiontareas.domain.model.tarjeta.model.ItemChecklist;
 import pds.gestiontareas.domain.model.tarjeta.model.Tarjeta;
+import pds.gestiontareas.domain.model.tarjeta.model.TarjetaChecklist;
 
 @Controller
 public class TableroController {
@@ -69,19 +72,124 @@ public class TableroController {
     
     @FXML
     public void initialize() {
-        Tablero tableroReal = null;
-        List<Tablero> tablerosGuardados = tableroService.obtenerTodos(); 
+        boolean tableroCargado = false;
         
-        if (!tablerosGuardados.isEmpty()) {
-            tableroReal = tablerosGuardados.get(0);
-            miTableroId = tableroReal.getId();
-        } else {
-            miTableroId = tableroService.crearTablero("Mi Proyecto PDS", "alumno@um.es");
-            tableroService.añadirListaATablero(miTableroId, "Por Hacer");
-            tableroService.añadirListaATablero(miTableroId, "En Progreso");
-            tableroReal = tableroService.obtenerTablero(miTableroId);
-        }
+        while (!tableroCargado) {
+            Alert inicioDialog = new Alert(Alert.AlertType.CONFIRMATION);
+            inicioDialog.setTitle("Bienvenido a Gestión de Tareas PDS");
+            inicioDialog.setHeaderText("Elige una opción para comenzar");
+            
+            ButtonType btnCrear = new ButtonType("Crear Nuevo Tablero");
+            ButtonType btnAcceder = new ButtonType("Acceder con ID");
+            ButtonType btnRecuperar = new ButtonType("Recuperar por Email");
+            ButtonType btnSalir = new ButtonType("Salir", ButtonData.CANCEL_CLOSE);
+            
+            inicioDialog.getButtonTypes().setAll(btnCrear, btnAcceder, btnRecuperar, btnSalir);
+            
+            Optional<ButtonType> resultado = inicioDialog.showAndWait();
+            
+            if (resultado.isPresent() && resultado.get() == btnCrear) {
+                TextInputDialog dialogEmail = new TextInputDialog();
+                dialogEmail.setTitle("Nuevo Tablero");
+                dialogEmail.setHeaderText("Introduce tu correo electrónico para ser el dueño:");
+                dialogEmail.setContentText("Email:");
+                Optional<String> emailOpt = dialogEmail.showAndWait();
+                
+                if (emailOpt.isPresent() && !emailOpt.get().trim().isEmpty()) {
+                    String email = emailOpt.get().trim();
+                    
+                    if(!email.contains("@")) {
+                        mostrarError("Email inválido", "Por favor, introduce un correo real.");
+                        continue;
+                    }
 
+                    miTableroId = tableroService.crearTablero("Mi Proyecto PDS", email);
+                    tableroService.añadirListaATablero(miTableroId, "Por Hacer");
+                    tableroService.añadirListaATablero(miTableroId, "En Progreso");
+                    
+                    Alert infoUrl = new Alert(Alert.AlertType.INFORMATION);
+                    infoUrl.setTitle("Tablero Creado");
+                    infoUrl.setHeaderText("¡Tablero creado con éxito!");
+                    
+                    TextArea areaTexto = new TextArea("URL/ID Privada:\n" + miTableroId.getValor());
+                    areaTexto.setEditable(false);
+                    areaTexto.setWrapText(true);
+                    areaTexto.setMaxHeight(60);
+                    
+                    infoUrl.getDialogPane().setContent(new VBox(10, 
+                        new Label("Guarda este código. Es tu URL privada para entrar o compartir:"), 
+                        areaTexto));
+                    infoUrl.showAndWait();
+                    
+                    tableroCargado = true;
+                }
+            } else if (resultado.isPresent() && resultado.get() == btnAcceder) {
+                TextInputDialog dialogUrl = new TextInputDialog();
+                dialogUrl.setTitle("Acceder a Tablero");
+                dialogUrl.setHeaderText("Introduce la URL o ID privado del tablero:");
+                dialogUrl.setContentText("URL/ID:");
+                Optional<String> urlOpt = dialogUrl.showAndWait();
+                
+                if (urlOpt.isPresent() && !urlOpt.get().trim().isEmpty()) {
+                    try {
+                        miTableroId = new TableroId(urlOpt.get().trim());
+                        tableroService.obtenerTablero(miTableroId); 
+                        tableroCargado = true;
+                    } catch (Exception e) {
+                        mostrarError("Tablero no encontrado", "Asegúrate de que la URL/ID que te han pasado es correcta.");
+                    }
+                }
+            } else if (resultado.isPresent() && resultado.get() == btnRecuperar) {
+                TextInputDialog dialogEmail = new TextInputDialog();
+                dialogEmail.setTitle("Recuperar Tableros");
+                dialogEmail.setHeaderText("Introduce el correo con el que creaste tu tablero:");
+                dialogEmail.setContentText("Email:");
+                Optional<String> emailOpt = dialogEmail.showAndWait();
+                
+                if (emailOpt.isPresent() && !emailOpt.get().trim().isEmpty()) {
+                    String emailBuscado = emailOpt.get().trim();
+                    List<Tablero> misTableros = tableroService.obtenerTablerosPorEmail(emailBuscado);
+                    
+                    if (misTableros.isEmpty()) {
+                        mostrarError("Sin resultados", "No hemos encontrado ningún tablero asociado al correo: " + emailBuscado);
+                    } else if (misTableros.size() == 1) {
+                        miTableroId = misTableros.get(0).getId();
+                        tableroCargado = true;
+                    } else {
+                        List<String> opciones = misTableros.stream()
+                            .map(t -> t.getNombre() + " (" + t.getId().getValor() + ")")
+                            .collect(Collectors.toList());
+                            
+                        ChoiceDialog<String> dialogSeleccion = new ChoiceDialog<>(opciones.get(0), opciones);
+                        dialogSeleccion.setTitle("Mis Tableros");
+                        dialogSeleccion.setHeaderText("Hemos encontrado varios tableros. Elige uno:");
+                        dialogSeleccion.setContentText("Tablero:");
+                        
+                        Optional<String> seleccion = dialogSeleccion.showAndWait();
+                        if (seleccion.isPresent()) {
+                            String idSeleccionado = seleccion.get().substring(seleccion.get().lastIndexOf("(") + 1, seleccion.get().lastIndexOf(")"));
+                            miTableroId = new TableroId(idSeleccionado);
+                            tableroCargado = true;
+                        }
+                    }
+                }
+            } else {
+                System.exit(0);
+            }
+        }
+        
+        cargarDatosTableroEnPantalla();
+    }
+    
+    private void mostrarError(String titulo, String mensaje) {
+        Alert error = new Alert(Alert.AlertType.ERROR);
+        error.setHeaderText(titulo);
+        error.setContentText(mensaje);
+        error.showAndWait();
+    }
+
+    private void cargarDatosTableroEnPantalla() {
+        Tablero tableroReal = tableroService.obtenerTablero(miTableroId);
         boolean estaBloqueado = tableroReal.isBloqueado();
         
         if (btnBloquear != null) {
@@ -130,33 +238,28 @@ public class TableroController {
         columna.setMaxHeight(Region.USE_PREF_SIZE);
         columna.setSpacing(10);
 
-        // --- CABECERA CON DISEÑO MINIMALISTA ---
         Label titulo = new Label(nombreLista);
         titulo.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #172b4d;");
 
-        // Usamos una "X" discreta en lugar del emoji
         Button btnBorrarLista = new Button("✕");
         
-        // Estilo inicial: gris sutil y sin fondo
         String estiloNormal = "-fx-background-color: transparent; -fx-text-fill: #a5adba; -fx-cursor: hand; -fx-font-size: 14px; -fx-padding: 0 5 0 5;";
-        // Estilo al pasar el ratón: se vuelve rojo
         String estiloHover = "-fx-background-color: transparent; -fx-text-fill: #ef5350; -fx-cursor: hand; -fx-font-size: 14px; -fx-padding: 0 5 0 5;";
         
         btnBorrarLista.setStyle(estiloNormal);
         
-        // Efecto hover (cambia de color al pasar el ratón)
         btnBorrarLista.setOnMouseEntered(e -> btnBorrarLista.setStyle(estiloHover));
         btnBorrarLista.setOnMouseExited(e -> btnBorrarLista.setStyle(estiloNormal));
         
         Region espaciador = new Region();
-        javafx.scene.layout.HBox.setHgrow(espaciador, javafx.scene.layout.Priority.ALWAYS);
+        HBox.setHgrow(espaciador, Priority.ALWAYS);
         
         HBox cabecera = new HBox(titulo, espaciador, btnBorrarLista);
         cabecera.setAlignment(Pos.CENTER_LEFT);
         cabecera.setStyle("-fx-padding: 0 0 10 0;");
         
         btnBorrarLista.setOnAction(e -> {
-            javafx.scene.control.Alert confirmacion = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION);
+            Alert confirmacion = new Alert(Alert.AlertType.CONFIRMATION);
             confirmacion.setTitle("Eliminar Lista");
             confirmacion.setHeaderText("¿Borrar la lista '" + nombreLista + "'?");
             confirmacion.setContentText("Todas las tarjetas que contenga desaparecerán de la vista.");
@@ -170,7 +273,6 @@ public class TableroController {
                 }
             });
         });
-        // ---------------------------------------
 
         VBox contenedorTarjetas = new VBox();
         contenedorTarjetas.setSpacing(8);
@@ -181,14 +283,29 @@ public class TableroController {
         btnAñadir.setMaxWidth(Double.MAX_VALUE);
         
         btnAñadir.setOnAction(e -> {
-            TextInputDialog dialogo = new TextInputDialog();
-            dialogo.setHeaderText("Nueva tarea para " + nombreLista);
-            dialogo.showAndWait().ifPresent(texto -> {
-                if(!texto.trim().isEmpty()) {
-                    TarjetaId nuevaId = tarjetaService.crearTarjeta(texto);
+            Dialog<ButtonType> dialogCrear = new Dialog<>();
+            dialogCrear.setTitle("Nueva Tarjeta");
+            dialogCrear.setHeaderText("Añadir tarea a: " + nombreLista);
+            
+            TextField txtNombre = new TextField();
+            txtNombre.setPromptText("Nombre de la tarjeta...");
+            
+            ComboBox<String> comboTipo = new ComboBox<>();
+            comboTipo.getItems().addAll("Tarea Simple", "Checklist");
+            comboTipo.setValue("Tarea Simple");
+            
+            VBox cajita = new VBox(10, new Label("Nombre:"), txtNombre, new Label("Tipo de Tarjeta:"), comboTipo);
+            dialogCrear.getDialogPane().setContent(cajita);
+            dialogCrear.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+            
+            dialogCrear.showAndWait().ifPresent(btn -> {
+                if (btn == ButtonType.OK && !txtNombre.getText().trim().isEmpty()) {
+                    String tipoSeleccionado = comboTipo.getValue().equals("Checklist") ? "CHECKLIST" : "TAREA";
+                    TarjetaId nuevaId = tarjetaService.crearTarjeta(txtNombre.getText(), tipoSeleccionado);
+                    
                     tableroService.añadirTarjetaAListaPorNombre(miTableroId, nombreLista, nuevaId.getValor());
-                    tableroService.registrarAccionManual(miTableroId, "Se creó la tarjeta '" + texto + "' en la lista '" + nombreLista + "'.");
-                    contenedorTarjetas.getChildren().add(crearTarjetaVisual(texto, nuevaId.getValor(), nombreLista, contenedorTarjetas));
+                    tableroService.registrarAccionManual(miTableroId, "Se creó la tarjeta '" + txtNombre.getText() + "' de tipo " + tipoSeleccionado + " en la lista '" + nombreLista + "'.");
+                    contenedorTarjetas.getChildren().add(crearTarjetaVisual(txtNombre.getText(), nuevaId.getValor(), nombreLista, contenedorTarjetas));
                 }
             });
         });
@@ -254,31 +371,36 @@ public class TableroController {
             cajaDesc.getChildren().addAll(lblDesc, txtDesc);
 
             VBox cajaChecklistCompleta = new VBox(8);
-            Label lblChecklist = new Label("Checklist (Subtareas):");
-            lblChecklist.setStyle("-fx-font-weight: bold; -fx-text-fill: #172b4d;");
             
-            VBox listaSubtareas = new VBox(8);
-            if (datosActualizados.getChecklist() != null) {
-                for (ItemChecklist item : datosActualizados.getChecklist()) {
-                    listaSubtareas.getChildren().add(crearFilaSubtarea(item.getTexto(), item.isCompletado(), tarjetaId, textoTarea, listaSubtareas));
+            if (datosActualizados instanceof TarjetaChecklist) {
+                TarjetaChecklist tarjetaChecklist = (TarjetaChecklist) datosActualizados;
+                
+                Label lblChecklist = new Label("Checklist (Subtareas):");
+                lblChecklist.setStyle("-fx-font-weight: bold; -fx-text-fill: #172b4d;");
+                
+                VBox listaSubtareas = new VBox(8);
+                if (tarjetaChecklist.getChecklist() != null) {
+                    for (ItemChecklist item : tarjetaChecklist.getChecklist()) {
+                        listaSubtareas.getChildren().add(crearFilaSubtarea(item.getTexto(), item.isCompletado(), tarjetaId, textoTarea, listaSubtareas));
+                    }
                 }
-            }
 
-            TextField txtNuevoItem = new TextField();
-            txtNuevoItem.setPromptText("Añadir un elemento...");
-            Button btnAñadirItem = new Button("Añadir");
-            HBox controlesChecklist = new HBox(10, txtNuevoItem, btnAñadirItem);
-            
-            btnAñadirItem.setOnAction(ev -> {
-                String texto = txtNuevoItem.getText();
-                if (texto != null && !texto.trim().isEmpty()) {
-                    tarjetaService.añadirItemChecklist(tarjetaId, texto);
-                    tableroService.registrarAccionManual(miTableroId, "Se añadió la subtarea '" + texto + "' a la tarjeta '" + textoTarea + "'.");
-                    listaSubtareas.getChildren().add(crearFilaSubtarea(texto, false, tarjetaId, textoTarea, listaSubtareas));
-                    txtNuevoItem.clear();
-                }
-            });
-            cajaChecklistCompleta.getChildren().addAll(lblChecklist, listaSubtareas, controlesChecklist);
+                TextField txtNuevoItem = new TextField();
+                txtNuevoItem.setPromptText("Añadir un elemento...");
+                Button btnAñadirItem = new Button("Añadir");
+                HBox controlesChecklist = new HBox(10, txtNuevoItem, btnAñadirItem);
+                
+                btnAñadirItem.setOnAction(ev -> {
+                    String texto = txtNuevoItem.getText();
+                    if (texto != null && !texto.trim().isEmpty()) {
+                        tarjetaService.añadirItemChecklist(tarjetaId, texto);
+                        tableroService.registrarAccionManual(miTableroId, "Se añadió la subtarea '" + texto + "' a la tarjeta '" + textoTarea + "'.");
+                        listaSubtareas.getChildren().add(crearFilaSubtarea(texto, false, tarjetaId, textoTarea, listaSubtareas));
+                        txtNuevoItem.clear();
+                    }
+                });
+                cajaChecklistCompleta.getChildren().addAll(lblChecklist, listaSubtareas, controlesChecklist);
+            }
 
             VBox cajaEtiquetas = new VBox(8);
             Label lblColor = new Label("Gestionar Etiquetas:");
@@ -318,7 +440,32 @@ public class TableroController {
             HBox cajaMover = new HBox(10, lblMover, comboListas);
             cajaMover.setAlignment(Pos.CENTER_LEFT);
 
-            contenidoDialogo.getChildren().addAll(cajaDesc, cajaChecklistCompleta, cajaEtiquetas, cajaMover);
+            CheckBox chkCompletada = new CheckBox("✅ Marcar tarjeta como COMPLETADA");
+            chkCompletada.setSelected(datosActualizados.isCompletada());
+            chkCompletada.setStyle("-fx-font-weight: bold; -fx-text-fill: #2e7d32; -fx-font-size: 14px; -fx-padding: 0 0 10 0;");
+            
+            chkCompletada.selectedProperty().addListener((obs, old, isCompleted) -> {
+                if (isCompleted) {
+                    if (!comboListas.getItems().contains("Completadas")) {
+                        comboListas.getItems().add("Completadas");
+                    }
+                    comboListas.setValue("Completadas");
+                } else {
+                    comboListas.setValue(listaActual[0]);
+                }
+            });
+
+            comboListas.valueProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal != null) {
+                    if (newVal.equals("Completadas")) {
+                        chkCompletada.setSelected(true);
+                    } else {
+                        chkCompletada.setSelected(false);
+                    }
+                }
+            });
+            
+            contenidoDialogo.getChildren().addAll(chkCompletada, cajaDesc, cajaChecklistCompleta, cajaEtiquetas, cajaMover);
             
             ScrollPane scrollPane = new ScrollPane(contenidoDialogo);
             scrollPane.setFitToWidth(true); 
@@ -348,8 +495,27 @@ public class TableroController {
                 if (tipo == btnGuardar) {
                     tarjetaService.actualizarDescripcion(tarjetaId, txtDesc.getText());
 
+                    boolean estadoAnterior = datosActualizados.isCompletada();
+                    boolean estadoNuevo = chkCompletada.isSelected();
+                    
+                    if (estadoAnterior != estadoNuevo) {
+                        tarjetaService.cambiarEstadoCompletada(tarjetaId, estadoNuevo);
+                        if (estadoNuevo) {
+                            tableroService.registrarAccionManual(miTableroId, "Se marcó como completada la tarjeta '" + textoTarea + "'.");
+                        } else {
+                            tableroService.registrarAccionManual(miTableroId, "Se desmarcó como completada la tarjeta '" + textoTarea + "'.");
+                        }
+                    }
+
                     String listaDestino = comboListas.getValue();
                     if (!listaDestino.equals(listaActual[0])) {
+                        
+                        if (listaDestino.equals("Completadas") && !columnasVisuales.containsKey("Completadas")) {
+                            tableroService.añadirListaATablero(miTableroId, "Completadas");
+                            boolean estaBloqueado = tableroService.obtenerTablero(miTableroId).isBloqueado();
+                            crearColumnaVisual("Completadas", estaBloqueado);
+                        }
+
                         tableroService.moverTarjeta(miTableroId, tarjetaId, listaActual[0], listaDestino);
                         cajaActual[0].getChildren().remove(tarjeta); 
                         VBox nuevaCaja = columnasVisuales.get(listaDestino);
