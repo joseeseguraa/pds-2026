@@ -2,6 +2,8 @@ package pds.gestiontareas.application;
 
 import org.springframework.stereotype.Service;
 import pds.gestiontareas.domain.model.tarjeta.id.TarjetaId;
+import pds.gestiontareas.domain.model.tarjeta.model.Etiqueta;
+import pds.gestiontareas.domain.model.tarjeta.model.ItemChecklist;
 import pds.gestiontareas.domain.model.tarjeta.model.Tarjeta;
 import pds.gestiontareas.domain.model.tarjeta.model.TarjetaTarea;
 import pds.gestiontareas.domain.model.tarjeta.repository.TarjetaRepository;
@@ -42,7 +44,7 @@ public class TarjetaService {
         Tarjeta tarjeta = obtenerTarjeta(tarjetaId);
         
         if (!tarjeta.tieneEtiqueta(colorHex)) {
-            tarjeta.añadirEtiqueta(new pds.gestiontareas.domain.model.tarjeta.model.Etiqueta(nombre, colorHex));
+            tarjeta.añadirEtiqueta(new Etiqueta(nombre, colorHex));
             tarjetaRepository.guardar(tarjeta);
         }
     }
@@ -57,4 +59,33 @@ public class TarjetaService {
         tarjetaRepository.eliminar(new TarjetaId(tarjetaIdStr));
     }
 
+    public void añadirItemChecklist(String tarjetaIdStr, String texto) {
+        Tarjeta tarjeta = tarjetaRepository.buscarPorId(new TarjetaId(tarjetaIdStr))
+                .orElseThrow(() -> new IllegalArgumentException("La tarjeta no existe"));
+                
+        tarjeta.getChecklist().add(new ItemChecklist(texto, false));
+        tarjetaRepository.guardar(tarjeta);
+    }
+
+    public void alternarEstadoChecklist(String tarjetaIdStr, String textoItem, boolean estaCompletado) {
+        Tarjeta tarjeta = tarjetaRepository.buscarPorId(new TarjetaId(tarjetaIdStr))
+                .orElseThrow(() -> new IllegalArgumentException("La tarjeta no existe"));
+                
+        for (ItemChecklist item : tarjeta.getChecklist()) {
+            if (item.getTexto().equals(textoItem)) {
+                item.setCompletado(estaCompletado);
+                break;
+            }
+        }
+        tarjetaRepository.guardar(tarjeta);
+    }
+    
+    public void eliminarItemChecklist(String tarjetaIdStr, String textoItem) {
+        Tarjeta tarjeta = tarjetaRepository.buscarPorId(new TarjetaId(tarjetaIdStr))
+                .orElseThrow(() -> new IllegalArgumentException("La tarjeta no existe"));
+                
+        tarjeta.getChecklist().removeIf(item -> item.getTexto().equals(textoItem));
+        tarjetaRepository.guardar(tarjeta);
+    }
+    
 }

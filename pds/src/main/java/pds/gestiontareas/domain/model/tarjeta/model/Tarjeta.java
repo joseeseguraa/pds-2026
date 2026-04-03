@@ -11,6 +11,8 @@ public abstract class Tarjeta {
     protected boolean completada;
     protected List<Etiqueta> etiquetas;
 
+    private List<ItemChecklist> checklist = new ArrayList<>();
+    
     public Tarjeta(String titulo, String descripcion) {
         this.id = new TarjetaId();
         this.titulo = titulo;
@@ -50,4 +52,6 @@ public abstract class Tarjeta {
     public TarjetaId getId() { return id; }
     public String getTitulo() { return titulo; }
     public boolean isCompletada() { return completada; }
+    public List<ItemChecklist> getChecklist() { return checklist; }
+    public void setChecklist(java.util.List<ItemChecklist> checklist) { this.checklist = checklist; }
 }

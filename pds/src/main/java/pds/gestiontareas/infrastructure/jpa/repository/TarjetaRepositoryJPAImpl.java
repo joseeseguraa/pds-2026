@@ -4,13 +4,16 @@ import org.springframework.stereotype.Repository;
 
 import pds.gestiontareas.domain.model.tarjeta.model.Etiqueta;
 import pds.gestiontareas.domain.model.tarjeta.model.Tarjeta;
+import pds.gestiontareas.domain.model.tarjeta.model.ItemChecklist;
 import pds.gestiontareas.domain.model.tarjeta.model.TarjetaTarea;
 import pds.gestiontareas.domain.model.tarjeta.repository.TarjetaRepository;
 import pds.gestiontareas.domain.model.tarjeta.id.TarjetaId;
 import pds.gestiontareas.infrastructure.jpa.TarjetaJpaRepository;
 import pds.gestiontareas.infrastructure.jpa.entity.EtiquetaEmbeddable;
+import pds.gestiontareas.infrastructure.jpa.entity.ItemChecklistEmbeddable;
 import pds.gestiontareas.infrastructure.jpa.entity.TarjetaEntity;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -39,6 +42,18 @@ public class TarjetaRepositoryJPAImpl implements TarjetaRepository {
                 
         entity.setEtiquetas(embeddables);
         
+        List<ItemChecklistEmbeddable> checklistEntities = new ArrayList<>();
+        if (tarjeta.getChecklist() != null) {
+            for (ItemChecklist item : tarjeta.getChecklist()) {
+                checklistEntities.add(new ItemChecklistEmbeddable(
+                    item.getTexto(), 
+                    item.isCompletado()
+                ));
+            }
+        }
+        entity.setChecklist(checklistEntities);
+        
+        
         jpaRepository.save(entity);
     }
 
@@ -58,6 +73,17 @@ public class TarjetaRepositoryJPAImpl implements TarjetaRepository {
                 if (entity.getEtiquetas() != null) {
                     for (EtiquetaEmbeddable emb : entity.getEtiquetas()) {
                         tarjeta.añadirEtiqueta(new Etiqueta(emb.getNombre(), emb.getColorHex()));
+                    }
+                }
+                
+                if (entity.getChecklist() != null) {
+                    for (ItemChecklistEmbeddable itemEmb : entity.getChecklist()) {
+                    	tarjeta.getChecklist().add(
+                            new ItemChecklist(
+                                itemEmb.getTexto(), 
+                                itemEmb.isCompletado()
+                            )
+                        );
                     }
                 }
                 

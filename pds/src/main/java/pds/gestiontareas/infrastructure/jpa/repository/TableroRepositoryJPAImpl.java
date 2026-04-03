@@ -4,11 +4,13 @@ import org.springframework.stereotype.Repository;
 
 import pds.gestiontareas.domain.model.tablero.model.ListaTareas;
 import pds.gestiontareas.domain.model.tablero.model.Tablero;
+import pds.gestiontareas.domain.model.tablero.model.TrazaAccion;
 import pds.gestiontareas.domain.model.tablero.repository.TableroRepository;
 import pds.gestiontareas.domain.model.usuario.model.Email;
 import pds.gestiontareas.infrastructure.jpa.TableroJpaRepository;
 import pds.gestiontareas.infrastructure.jpa.entity.ListaTareasEntity;
 import pds.gestiontareas.infrastructure.jpa.entity.TableroEntity;
+import pds.gestiontareas.infrastructure.jpa.entity.TrazaAccionEmbeddable;
 import pds.gestiontareas.domain.model.tablero.id.TableroId;
 
 import java.util.ArrayList;
@@ -47,6 +49,15 @@ public class TableroRepositoryJPAImpl implements TableroRepository {
         
         entity.setListas(listasEntities);
         
+        List<TrazaAccionEmbeddable> historialEntities = new ArrayList<>();
+        for (TrazaAccion traza : tablero.getHistorial()) {
+            historialEntities.add(new TrazaAccionEmbeddable(
+                traza.getDescripcion(), 
+                traza.getFecha()
+            ));
+        }
+        entity.setHistorial(historialEntities);
+        
         jpaRepository.save(entity);
     }
 
@@ -83,6 +94,12 @@ public class TableroRepositoryJPAImpl implements TableroRepository {
             entity.isBloqueado(),
             listasDominio
         );
+
+        if (entity.getHistorial() != null) {
+            for (TrazaAccionEmbeddable trazaEmb : entity.getHistorial()) {
+                tableroReconstruido.getHistorial().add(new TrazaAccion(trazaEmb.getDescripcion()));
+            }
+        }
 
         return Optional.of(tableroReconstruido);
     }

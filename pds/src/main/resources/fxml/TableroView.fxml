@@ -30,8 +30,10 @@
                 
                 <Region HBox.hgrow="ALWAYS"/>
                 
-                <Button text="Bloquear Tablero" styleClass="btn-bloquear"/>
+                <Button fx:id="btnBloquear" text="Bloquear Tablero" styleClass="btn-bloquear" onAction="#alternarBloqueoUI"/>
                 
+				<Button fx:id="btnHistorial" text="Historial" styleClass="btn-bloquear" style="-fx-background-color: #0079bf; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" onAction="#mostrarHistorial"/>            
+            
             </HBox>
         </top>
 

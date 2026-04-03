@@ -1,6 +1,8 @@
 package pds.gestiontareas.infrastructure.jpa.entity;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
@@ -26,6 +28,10 @@ public class TableroEntity {
     @JoinColumn(name = "tablero_id")
     private List<ListaTareasEntity> listas = new ArrayList<>();
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "tableros_historial", joinColumns = @JoinColumn(name = "tablero_id"))
+    private List<TrazaAccionEmbeddable> historial = new ArrayList<>();
+    
     public TableroEntity() {}
 
     public String getId() { return id; }
@@ -42,4 +48,7 @@ public class TableroEntity {
 
     public List<ListaTareasEntity> getListas() { return listas; }
     public void setListas(List<ListaTareasEntity> listas) { this.listas = listas; }
+    
+    public List<TrazaAccionEmbeddable> getHistorial() { return historial; }
+    public void setHistorial(List<TrazaAccionEmbeddable> historial) { this.historial = historial; }
 }

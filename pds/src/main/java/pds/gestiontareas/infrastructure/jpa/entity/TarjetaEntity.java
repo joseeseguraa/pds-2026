@@ -19,6 +19,10 @@ public class TarjetaEntity {
     @CollectionTable(name = "tarjetas_etiquetas", joinColumns = @JoinColumn(name = "tarjeta_id"))
     private List<EtiquetaEmbeddable> etiquetas = new ArrayList<>();
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "tarjetas_checklists", joinColumns = @JoinColumn(name = "tarjeta_id"))
+    private List<ItemChecklistEmbeddable> checklist = new ArrayList<>();
+    
     public TarjetaEntity() {}
 
     public String getId() { return id; }
@@ -35,4 +39,7 @@ public class TarjetaEntity {
 
     public List<EtiquetaEmbeddable> getEtiquetas() { return etiquetas; }
     public void setEtiquetas(List<EtiquetaEmbeddable> etiquetas) { this.etiquetas = etiquetas; }
+
+    public List<ItemChecklistEmbeddable> getChecklist() { return checklist; }
+    public void setChecklist(List<ItemChecklistEmbeddable> checklist) { this.checklist = checklist; }
 }
