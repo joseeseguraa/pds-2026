@@ -1,22 +1,29 @@
 package pds.gestiontareas.domain.model.tablero.model;
 
 import pds.gestiontareas.domain.model.tablero.id.TableroId;
-import pds.gestiontareas.domain.model.usuario.model.Email;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Agregado Raíz: Tablero.
+ * DECISIÓN DE DISEÑO (DDD): Se ha decidido no modelar el "Usuario" como un Agregado 
+ * independiente. Dado que los requisitos solo exigen un email para la creación 
+ * y no hay gestión de perfiles o autenticación compleja, el creador se modela 
+ * simplemente como un String asociado a este Tablero, 
+ * respetando el principio YAGNI (You Aren't Gonna Need It).
+ */
+
 public class Tablero {
     private TableroId id;
     private String nombre;
-    @SuppressWarnings("unused")
-    private Email creador;
+    private String creador;
     private boolean bloqueado;
     private List<ListaTareas> listas;
     private List<TrazaAccion> historial;
 
-    public Tablero(String nombre, Email creador) {
+    public Tablero(String nombre, String creador) {
         this.id = new TableroId();
         this.nombre = nombre;
         this.creador = creador;
@@ -26,10 +33,10 @@ public class Tablero {
         
         this.listas.add(new ListaTareas("Completadas"));
         
-        registrarAccion("Tablero '" + nombre + "' creado por " + creador.getDireccion());
+        registrarAccion("Tablero '" + nombre + "' creado por " + creador);
     }
     
-    public Tablero(TableroId id, String nombre, Email creador, boolean bloqueado, List<ListaTareas> listas) {
+    public Tablero(TableroId id, String nombre, String creador, boolean bloqueado, List<ListaTareas> listas) {
         this.id = id;
         this.nombre = nombre;
         this.creador = creador;
@@ -65,7 +72,6 @@ public class Tablero {
         lista.añadirTarjeta(tarjetaId);
         registrarAccion("Tarjeta añadida a la lista: " + lista.getTitulo());
     }
-    
 
     private Optional<ListaTareas> buscarListaPorId(String listaId) {
         return listas.stream().filter(l -> l.getId().equals(listaId)).findFirst();
@@ -88,12 +94,27 @@ public class Tablero {
         registrarAccion("Tarjeta movida de '" + origen.getTitulo() + "' a '" + destino.getTitulo() + "'");
     }
     
+    public void eliminarLista(String nombreLista) {
+        boolean removida = this.listas.removeIf(lista -> lista.getTitulo().equals(nombreLista));
+        if (removida) {
+            registrarAccion("Se eliminó la lista completa '" + nombreLista + "'.");
+        }
+    }
+
+    public void eliminarTarjetaDeLista(String nombreLista, String tarjetaId) {
+        for (ListaTareas lista : this.listas) {
+            if (lista.getTitulo().equals(nombreLista)) {
+                lista.getTarjetasIds().remove(tarjetaId);
+                registrarAccion("Se eliminó una tarjeta de la lista '" + nombreLista + "'.");
+                break;
+            }
+        }
+    }
+    
     public TableroId getId() { return id; }
     public String getNombre() { return nombre; }
     public boolean isBloqueado() { return bloqueado; }
     public List<ListaTareas> getListas() { return listas; }
     public List<TrazaAccion> getHistorial() { return historial; }
-
-    public Email getCreador() { return creador; }
+    public String getCreador() { return creador; }
 }
-

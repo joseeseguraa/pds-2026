@@ -6,27 +6,22 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import pds.gestiontareas.domain.model.tablero.id.TableroId;
-import pds.gestiontareas.domain.model.tablero.model.ListaTareas;
 import pds.gestiontareas.domain.model.tablero.model.Tablero;
 import pds.gestiontareas.domain.model.tablero.model.TrazaAccion;
 import pds.gestiontareas.domain.model.tablero.repository.TableroRepository;
-import pds.gestiontareas.domain.model.usuario.model.Email;
 
 @Service
 public class TableroService {
 
-	private final TableroRepository tableroRepository;
+    private final TableroRepository tableroRepository;
 
     public TableroService(TableroRepository tableroRepository) {
         this.tableroRepository = tableroRepository;
     }
     
     public TableroId crearTablero(String nombreTablero, String emailCreador) {
-        Email creador = new Email(emailCreador);
-        Tablero nuevoTablero = new Tablero(nombreTablero, creador);
-        
+        Tablero nuevoTablero = new Tablero(nombreTablero, emailCreador); 
         tableroRepository.guardar(nuevoTablero);
-        
         return nuevoTablero.getId();
     }
 
@@ -35,7 +30,6 @@ public class TableroService {
                 .orElseThrow(() -> new IllegalArgumentException("El tablero no existe"));
                 
         tablero.añadirLista(tituloLista);
-        
         tableroRepository.guardar(tablero); 
     }
 
@@ -60,7 +54,6 @@ public class TableroService {
         tablero.añadirTarjetaALista(tarjetaId, listaId);
         tableroRepository.guardar(tablero);
     }
-    
     
     public void moverTarjeta(TableroId tableroId, String tarjetaId, String nombreListaOrigen, String nombreListaDestino) {
         Tablero tablero = tableroRepository.buscarPorId(tableroId)
@@ -87,7 +80,6 @@ public class TableroService {
                 .orElseThrow(() -> new IllegalArgumentException("El tablero no existe"));
     }
 
-
     public List<String> obtenerNombresListas(TableroId tableroId) {
         Tablero tablero = tableroRepository.buscarPorId(tableroId)
                 .orElseThrow(() -> new IllegalArgumentException("El tablero no existe"));
@@ -100,12 +92,7 @@ public class TableroService {
     public void eliminarTarjetaDeLista(TableroId tableroId, String nombreLista, String tarjetaIdStr) {
         Tablero tablero = obtenerTablero(tableroId);
         
-        for (ListaTareas lista : tablero.getListas()) {
-            if (lista.getTitulo().equals(nombreLista)) {
-                lista.getTarjetasIds().remove(tarjetaIdStr);
-                break;
-            }
-        }
+        tablero.eliminarTarjetaDeLista(nombreLista, tarjetaIdStr);
         
         tableroRepository.guardar(tablero);
     }
@@ -128,7 +115,7 @@ public class TableroService {
                 .orElseThrow(() -> new IllegalArgumentException("El tablero no existe"));
                 
         return tablero.getHistorial().stream()
-                .map(traza -> traza.getDescripcion())
+                .map(TrazaAccion::getDescripcion)
                 .collect(Collectors.toList());
     }
     
@@ -144,14 +131,14 @@ public class TableroService {
         Tablero tablero = tableroRepository.buscarPorId(tableroId)
                 .orElseThrow(() -> new IllegalArgumentException("El tablero no existe"));
                 
-        tablero.getListas().removeIf(lista -> lista.getTitulo().equals(nombreLista));
+        tablero.eliminarLista(nombreLista);
+        
         tableroRepository.guardar(tablero);
     }
     
     public List<Tablero> obtenerTablerosPorEmail(String email) {
         return tableroRepository.buscarTodos().stream()
-                .filter(t -> t.getCreador() != null && t.getCreador().getDireccion().equalsIgnoreCase(email.trim()))
+                .filter(t -> t.getCreador() != null && t.getCreador().equalsIgnoreCase(email.trim()))
                 .collect(Collectors.toList());
     }
-    
 }

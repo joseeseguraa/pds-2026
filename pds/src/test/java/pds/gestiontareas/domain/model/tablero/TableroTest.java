@@ -7,16 +7,15 @@ import org.junit.jupiter.api.Test;
 
 import pds.gestiontareas.domain.model.tablero.model.ListaTareas;
 import pds.gestiontareas.domain.model.tablero.model.Tablero;
-import pds.gestiontareas.domain.model.usuario.model.Email;
 
 class TableroTest {
 
     private Tablero tablero;
-    private Email emailCreador;
+    private String emailCreador;
 
     @BeforeEach
     void setUp() {
-        emailCreador = new Email("estudiante@um.es");
+        emailCreador = "estudiante@um.es";
         tablero = new Tablero("Proyecto PDS", emailCreador);
     }
 
@@ -31,12 +30,12 @@ class TableroTest {
 
     @Test
     void testBloquearTableroImpideAñadirTarjetas() {
-
         tablero.añadirLista("TODO");
         
         ListaTareas listaTodo = tablero.getListas().stream()
                 .filter(l -> l.getTitulo().equals("TODO"))
-                .findFirst().get();
+                .findFirst()
+                .orElseThrow();
 
         tablero.bloquear();
         assertTrue(tablero.isBloqueado());
@@ -45,7 +44,23 @@ class TableroTest {
             tablero.añadirTarjetaALista("tarjeta-123", listaTodo.getId());
         });
 
-        assertNotNull(exception.getMessage());
+        assertEquals("No se pueden añadir tarjetas, el tablero está bloqueado temporalmente.", exception.getMessage());
     }
 
+    @Test
+    void testMoverTarjetaEntreListas() {
+        tablero.añadirLista("Origen");
+        tablero.añadirLista("Destino");
+        
+        String idO = tablero.getListas().get(1).getId();
+        String idD = tablero.getListas().get(2).getId();
+        String tarjetaId = "T-1";
+
+        tablero.añadirTarjetaALista(tarjetaId, idO);
+        
+        tablero.moverTarjeta(tarjetaId, idO, idD);
+
+        assertFalse(tablero.getListas().get(1).getTarjetasIds().contains(tarjetaId));
+        assertTrue(tablero.getListas().get(2).getTarjetasIds().contains(tarjetaId));
+    }
 }

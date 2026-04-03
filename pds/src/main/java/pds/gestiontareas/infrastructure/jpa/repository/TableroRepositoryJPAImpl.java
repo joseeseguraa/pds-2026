@@ -6,7 +6,6 @@ import pds.gestiontareas.domain.model.tablero.model.ListaTareas;
 import pds.gestiontareas.domain.model.tablero.model.Tablero;
 import pds.gestiontareas.domain.model.tablero.model.TrazaAccion;
 import pds.gestiontareas.domain.model.tablero.repository.TableroRepository;
-import pds.gestiontareas.domain.model.usuario.model.Email;
 import pds.gestiontareas.infrastructure.jpa.TableroJpaRepository;
 import pds.gestiontareas.infrastructure.jpa.entity.ListaTareasEntity;
 import pds.gestiontareas.infrastructure.jpa.entity.TableroEntity;
@@ -33,7 +32,7 @@ public class TableroRepositoryJPAImpl implements TableroRepository {
         entity.setNombre(tablero.getNombre());
         entity.setBloqueado(tablero.isBloqueado());
         
-        entity.setEmailCreador(tablero.getCreador().getDireccion());
+        entity.setEmailCreador(tablero.getCreador());
         
         List<ListaTareasEntity> listasEntities = new ArrayList<>();
         
@@ -84,13 +83,12 @@ public class TableroRepositoryJPAImpl implements TableroRepository {
             }
         }
 
-        Email creadorEmail = new Email(entity.getEmailCreador()); 
         TableroId tableroId = new TableroId(entity.getId()); 
 
         Tablero tableroReconstruido = new Tablero(
             tableroId,
             entity.getNombre(),
-            creadorEmail,
+            entity.getEmailCreador(),
             entity.isBloqueado(),
             listasDominio
         );

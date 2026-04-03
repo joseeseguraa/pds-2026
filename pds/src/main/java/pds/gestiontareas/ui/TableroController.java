@@ -227,7 +227,7 @@ public class TableroController {
         
         contenedorListas.getChildren().clear();
         columnasVisuales.clear();
-        initialize();
+        cargarDatosTableroEnPantalla();
     }
 
     private VBox crearColumnaVisual(String nombreLista, boolean estaBloqueado) {
