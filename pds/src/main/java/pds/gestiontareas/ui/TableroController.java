@@ -56,10 +56,7 @@ public class TableroController {
     private TableroId miTableroId;
     
     private Map<String, VBox> columnasVisuales = new HashMap<>();
-    
-    private VBox tarjetasPorHacer;
-    private VBox tarjetasEnProgreso;
-    private VBox tarjetasCompletadas;
+
     
     @FXML
     private HBox contenedorListas;
@@ -204,10 +201,6 @@ public class TableroController {
 
         for (ListaTareas lista : tableroReal.getListas()) {
             VBox contenedorDeEstaLista = crearColumnaVisual(lista.getTitulo(), estaBloqueado);
-            
-            if (lista.getTitulo().equals("Por Hacer")) tarjetasPorHacer = contenedorDeEstaLista;
-            if (lista.getTitulo().equals("En Progreso")) tarjetasEnProgreso = contenedorDeEstaLista;
-            if (lista.getTitulo().equals("Completadas")) tarjetasCompletadas = contenedorDeEstaLista;
 
             if (lista.getTarjetasIds() != null) {
                 for (String idTarjeta : lista.getTarjetasIds()) {
@@ -440,7 +433,7 @@ public class TableroController {
             HBox cajaMover = new HBox(10, lblMover, comboListas);
             cajaMover.setAlignment(Pos.CENTER_LEFT);
 
-            CheckBox chkCompletada = new CheckBox("✅ Marcar tarjeta como COMPLETADA");
+            CheckBox chkCompletada = new CheckBox("Marcar tarjeta como COMPLETADA");
             chkCompletada.setSelected(datosActualizados.isCompletada());
             chkCompletada.setStyle("-fx-font-weight: bold; -fx-text-fill: #2e7d32; -fx-font-size: 14px; -fx-padding: 0 0 10 0;");
             

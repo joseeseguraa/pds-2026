@@ -1,6 +1,5 @@
 package pds.gestiontareas.infrastructure;
 
-import org.springframework.stereotype.Repository;
 import pds.gestiontareas.domain.model.tarjeta.id.TarjetaId;
 import pds.gestiontareas.domain.model.tarjeta.model.Tarjeta;
 import pds.gestiontareas.domain.model.tarjeta.repository.TarjetaRepository;

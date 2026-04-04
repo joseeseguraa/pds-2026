@@ -27,7 +27,6 @@ public class EventBus {
         return instance;
     }
 
-    @SuppressWarnings("unchecked")
     public <T extends EventoDominio> void suscribir(Class<T> tipoEvento, Consumer<T> actuador) {
         suscriptores.computeIfAbsent(tipoEvento, k -> new ArrayList<>()).add((Consumer<? extends EventoDominio>) actuador);
     }
