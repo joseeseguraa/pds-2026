@@ -141,4 +141,13 @@ public class TableroService {
                 .filter(t -> t.getCreador() != null && t.getCreador().equalsIgnoreCase(email.trim()))
                 .collect(Collectors.toList());
     }
+    
+    public void limpiarHistorial(TableroId tableroId) {
+        Tablero tablero = tableroRepository.buscarPorId(tableroId)
+                .orElseThrow(() -> new IllegalArgumentException("El tablero no existe"));
+
+        tablero.getHistorial().clear();
+        tablero.getHistorial().add(new TrazaAccion("Se vació el historial de acciones manualmente."));       
+        tableroRepository.guardar(tablero);
+    }
 }

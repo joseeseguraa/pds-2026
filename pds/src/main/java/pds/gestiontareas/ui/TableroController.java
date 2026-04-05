@@ -597,7 +597,7 @@ public class TableroController {
     public void mostrarHistorial() {
         List<String> historial = tableroService.obtenerHistorialTextos(miTableroId);
 
-        Dialog<Void> dialog = new Dialog<>();
+        Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Historial de Actividad");
         dialog.setHeaderText("Registro de movimientos del tablero");
         
@@ -617,7 +617,30 @@ public class TableroController {
 
         dialog.getDialogPane().setContent(listaVisual);
         
-        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        ButtonType btnBorrar = new ButtonType("Borrar Historial", ButtonData.LEFT);
+        dialog.getDialogPane().getButtonTypes().addAll(btnBorrar, ButtonType.CLOSE);
+
+        Button botonBorrarInterfaz = (Button) dialog.getDialogPane().lookupButton(btnBorrar);
+        if (botonBorrarInterfaz != null) {
+            botonBorrarInterfaz.setStyle("-fx-text-fill: #ef5350; -fx-font-weight: bold; -fx-cursor: hand;");
+            
+            botonBorrarInterfaz.addEventFilter(ActionEvent.ACTION, e -> {
+                e.consume();
+                
+                Alert confirmacion = new Alert(Alert.AlertType.CONFIRMATION);
+                confirmacion.setTitle("Borrar Historial");
+                confirmacion.setHeaderText("¿Estás seguro de que quieres vaciar el historial?");
+                confirmacion.setContentText("Esta acción no se puede deshacer.");
+                
+                confirmacion.showAndWait().ifPresent(respuesta -> {
+                    if (respuesta == ButtonType.OK) {
+                        tableroService.limpiarHistorial(miTableroId);
+                        dialog.close();
+                        mostrarHistorial();
+                    }
+                });
+            });
+        }
 
         dialog.showAndWait();
     }
