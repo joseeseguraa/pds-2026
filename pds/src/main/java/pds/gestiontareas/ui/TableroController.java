@@ -68,6 +68,11 @@ public class TableroController {
     private Button btnBloquear;
     
     @FXML
+    private ColorPicker colorPickerFiltro;
+    
+    private String colorFiltroActual = null;
+    
+    @FXML
     public void initialize() {
         boolean tableroCargado = false;
         
@@ -184,7 +189,8 @@ public class TableroController {
         error.setContentText(mensaje);
         error.showAndWait();
     }
-
+    
+    /*
     private void cargarDatosTableroEnPantalla() {
         Tablero tableroReal = tableroService.obtenerTablero(miTableroId);
         boolean estaBloqueado = tableroReal.isBloqueado();
@@ -208,6 +214,48 @@ public class TableroController {
                     contenedorDeEstaLista.getChildren().add(
                         crearTarjetaVisual(tituloGuardado, idTarjeta, lista.getTitulo(), contenedorDeEstaLista)
                     );
+                }
+            }
+        }
+        crearBotonAñadirLista(estaBloqueado);
+    }
+    */
+    private void cargarDatosTableroEnPantalla() {
+        Tablero tableroReal = tableroService.obtenerTablero(miTableroId);
+        boolean estaBloqueado = tableroReal.isBloqueado();
+        
+        if (btnBloquear != null) {
+            if (estaBloqueado) {
+                btnBloquear.setText("Desbloquear Tablero");
+                btnBloquear.setStyle("-fx-background-color: #ef5350; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
+            } else {
+                btnBloquear.setText("Bloquear Tablero");
+                btnBloquear.setStyle("-fx-background-color: rgba(255, 255, 255, 0.2); -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
+            }
+        }
+
+        for (ListaTareas lista : tableroReal.getListas()) {
+            VBox contenedorDeEstaLista = crearColumnaVisual(lista.getTitulo(), estaBloqueado);
+
+            if (lista.getTarjetasIds() != null) {
+                for (String idTarjeta : lista.getTarjetasIds()) {
+                    Tarjeta datosTarjeta = tarjetaService.obtenerTarjeta(idTarjeta);
+                    
+                    boolean pasaFiltro = false;
+                    
+                    if (colorFiltroActual == null) {
+                        pasaFiltro = true; 
+                    } else if (colorFiltroActual.equals("SIN_ETIQUETA")) {
+                        pasaFiltro = datosTarjeta.getEtiquetas().isEmpty();
+                    } else {
+                        pasaFiltro = datosTarjeta.tieneEtiqueta(colorFiltroActual); 
+                    }
+
+                    if (pasaFiltro) {
+                        contenedorDeEstaLista.getChildren().add(
+                            crearTarjetaVisual(datosTarjeta.getTitulo(), idTarjeta, lista.getTitulo(), contenedorDeEstaLista)
+                        );
+                    }
                 }
             }
         }
@@ -436,7 +484,7 @@ public class TableroController {
             CheckBox chkCompletada = new CheckBox("Marcar tarjeta como COMPLETADA");
             chkCompletada.setSelected(datosActualizados.isCompletada());
             chkCompletada.setStyle("-fx-font-weight: bold; -fx-text-fill: #2e7d32; -fx-font-size: 14px; -fx-padding: 0 0 10 0;");
-            
+           
             chkCompletada.selectedProperty().addListener((obs, old, isCompleted) -> {
                 if (isCompleted) {
                     if (!comboListas.getItems().contains("Completadas")) {
@@ -447,7 +495,7 @@ public class TableroController {
                     comboListas.setValue(listaActual[0]);
                 }
             });
-
+            
             comboListas.valueProperty().addListener((obs, oldVal, newVal) -> {
                 if (newVal != null) {
                     if (newVal.equals("Completadas")) {
@@ -499,7 +547,7 @@ public class TableroController {
                             tableroService.registrarAccionManual(miTableroId, "Se desmarcó como completada la tarjeta '" + textoTarea + "'.");
                         }
                     }
-
+                  
                     String listaDestino = comboListas.getValue();
                     if (!listaDestino.equals(listaActual[0])) {
                         
@@ -510,6 +558,7 @@ public class TableroController {
                         }
 
                         tableroService.moverTarjeta(miTableroId, tarjetaId, listaActual[0], listaDestino);
+                        
                         cajaActual[0].getChildren().remove(tarjeta); 
                         VBox nuevaCaja = columnasVisuales.get(listaDestino);
                         
@@ -643,6 +692,35 @@ public class TableroController {
         }
 
         dialog.showAndWait();
+    }
+    
+    @FXML
+    public void aplicarFiltro() {
+        if (colorPickerFiltro != null && colorPickerFiltro.getValue() != null) {
+            colorFiltroActual = "#" + colorPickerFiltro.getValue().toString().substring(2, 8);
+            
+            contenedorListas.getChildren().clear();
+            columnasVisuales.clear();
+            cargarDatosTableroEnPantalla();
+        }
+    }
+
+    @FXML
+    public void filtrarSinEtiquetas() {
+        colorFiltroActual = "SIN_ETIQUETA"; 
+        
+        contenedorListas.getChildren().clear();
+        columnasVisuales.clear();
+        cargarDatosTableroEnPantalla();
+    }
+
+    @FXML
+    public void limpiarFiltro() {
+        colorFiltroActual = null; 
+        
+        contenedorListas.getChildren().clear();
+        columnasVisuales.clear();
+        cargarDatosTableroEnPantalla();
     }
     
     private String toHexString(Color color) {
