@@ -8,6 +8,8 @@ public class ListaTareas {
     private final String id;
     private String titulo;
     private List<String> tarjetasIds;
+    private Integer limiteTarjetas = null;
+    private List<String> listasPrecedentesRequeridas = new ArrayList<>();
 
     public ListaTareas(String titulo) {
         this.id = UUID.randomUUID().toString();
@@ -40,8 +42,24 @@ public class ListaTareas {
     public void quitarTarjeta(String tarjetaId) {
         this.tarjetasIds.remove(tarjetaId);
     }
+    
+    public void setLimiteTarjetas(Integer limiteTarjetas) { 
+    	this.limiteTarjetas = limiteTarjetas; 
+    }
 
     public List<String> getTarjetasIds() {
         return tarjetasIds;
+    }
+    
+    public Integer getLimiteTarjetas() { 
+    	return limiteTarjetas; 
+    }
+    
+    public List<String> getListasPrecedentesRequeridas() { 
+    	return listasPrecedentesRequeridas; 
+    }
+    
+    public void añadirListaRequerida(String nombreLista) { 
+    	this.listasPrecedentesRequeridas.add(nombreLista); 
     }
 }

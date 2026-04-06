@@ -43,6 +43,9 @@ public class TableroRepositoryJPAImpl implements TableroRepository {
             
             listaEntity.setTarjetasIds(new ArrayList<>(listaDominio.getTarjetasIds()));
             
+            listaEntity.setLimiteTarjetas(listaDominio.getLimiteTarjetas());
+            listaEntity.setListasPrecedentesRequeridas(new ArrayList<>(listaDominio.getListasPrecedentesRequeridas()));
+            
             listasEntities.add(listaEntity);
         }
         
@@ -79,6 +82,13 @@ public class TableroRepositoryJPAImpl implements TableroRepository {
                     listaEntity.getNombre(),
                     listaEntity.getTarjetasIds()
                 );
+                
+                lista.setLimiteTarjetas(listaEntity.getLimiteTarjetas());
+                if (listaEntity.getListasPrecedentesRequeridas() != null) {
+                    for (String requerida : listaEntity.getListasPrecedentesRequeridas()) {
+                        lista.añadirListaRequerida(requerida);
+                    }
+                }
                 listasDominio.add(lista);
             }
         }

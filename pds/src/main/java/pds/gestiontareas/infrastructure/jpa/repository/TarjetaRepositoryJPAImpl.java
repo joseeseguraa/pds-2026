@@ -51,6 +51,7 @@ public class TarjetaRepositoryJPAImpl implements TarjetaRepository {
             }
         }
         entity.setChecklist(checklistEntities);
+        entity.setListasVisitadas(new ArrayList<>(tarjeta.getListasVisitadas()));
         
         jpaRepository.save(entity);
     }
@@ -78,6 +79,12 @@ public class TarjetaRepositoryJPAImpl implements TarjetaRepository {
             if (entity.getEtiquetas() != null) {
                 for (EtiquetaEmbeddable emb : entity.getEtiquetas()) {
                     tarjeta.añadirEtiqueta(new Etiqueta(emb.getNombre(), emb.getColorHex()));
+                }
+            }
+            
+            if (entity.getListasVisitadas() != null) {
+                for (String visitada : entity.getListasVisitadas()) {
+                    tarjeta.registrarVisita(visitada);
                 }
             }
             

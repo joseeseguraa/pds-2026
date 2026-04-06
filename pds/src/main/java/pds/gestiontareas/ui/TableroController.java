@@ -209,22 +209,26 @@ public class TableroController {
 
             if (lista.getTarjetasIds() != null) {
                 for (String idTarjeta : lista.getTarjetasIds()) {
-                    Tarjeta datosTarjeta = tarjetaService.obtenerTarjeta(idTarjeta);
-                    
-                    boolean pasaFiltro = false;
-                    
-                    if (colorFiltroActual == null) {
-                        pasaFiltro = true; 
-                    } else if (colorFiltroActual.equals("SIN_ETIQUETA")) {
-                        pasaFiltro = datosTarjeta.getEtiquetas().isEmpty();
-                    } else {
-                        pasaFiltro = datosTarjeta.tieneEtiqueta(colorFiltroActual); 
-                    }
-
-                    if (pasaFiltro) {
-                        contenedorDeEstaLista.getChildren().add(
-                            crearTarjetaVisual(datosTarjeta.getTitulo(), idTarjeta, lista.getTitulo(), contenedorDeEstaLista)
-                        );
+                	try {
+	                    Tarjeta datosTarjeta = tarjetaService.obtenerTarjeta(idTarjeta);
+	                    
+	                    boolean pasaFiltro = false;
+	                    
+	                    if (colorFiltroActual == null) {
+	                        pasaFiltro = true; 
+	                    } else if (colorFiltroActual.equals("SIN_ETIQUETA")) {
+	                        pasaFiltro = datosTarjeta.getEtiquetas().isEmpty();
+	                    } else {
+	                        pasaFiltro = datosTarjeta.tieneEtiqueta(colorFiltroActual); 
+	                    }
+	
+	                    if (pasaFiltro) {
+	                        contenedorDeEstaLista.getChildren().add(
+	                            crearTarjetaVisual(datosTarjeta.getTitulo(), idTarjeta, lista.getTitulo(), contenedorDeEstaLista)
+	                        );
+	                    }
+                	} catch (IllegalArgumentException ex) {
+                        System.out.println("Aviso: Ignorando tarjeta fantasma con ID " + idTarjeta);
                     }
                 }
             }
@@ -262,10 +266,14 @@ public class TableroController {
         btnBorrarLista.setOnMouseEntered(e -> btnBorrarLista.setStyle(estiloHover));
         btnBorrarLista.setOnMouseExited(e -> btnBorrarLista.setStyle(estiloNormal));
         
+        Button btnAjustes = new Button("⚙️");
+        btnAjustes.setStyle("-fx-background-color: transparent; -fx-cursor: hand; -fx-font-size: 14px; -fx-padding: 0 5 0 5;");
+        btnAjustes.setOnAction(e -> abrirAjustesLista(nombreLista));
+        
         Region espaciador = new Region();
         HBox.setHgrow(espaciador, Priority.ALWAYS);
         
-        HBox cabecera = new HBox(titulo, espaciador, btnBorrarLista);
+        HBox cabecera = new HBox(titulo, espaciador, btnAjustes, btnBorrarLista);
         cabecera.setAlignment(Pos.CENTER_LEFT);
         cabecera.setStyle("-fx-padding: 0 0 10 0;");
         
@@ -311,12 +319,22 @@ public class TableroController {
             
             dialogCrear.showAndWait().ifPresent(btn -> {
                 if (btn == ButtonType.OK && !txtNombre.getText().trim().isEmpty()) {
-                    String tipoSeleccionado = comboTipo.getValue().equals("Checklist") ? "CHECKLIST" : "TAREA";
-                    TarjetaId nuevaId = tarjetaService.crearTarjeta(txtNombre.getText(), tipoSeleccionado);
-                    
-                    tableroService.añadirTarjetaAListaPorNombre(miTableroId, nombreLista, nuevaId.getValor());
-                    tableroService.registrarAccionManual(miTableroId, "Se creó la tarjeta '" + txtNombre.getText() + "' de tipo " + tipoSeleccionado + " en la lista '" + nombreLista + "'.");
-                    contenedorTarjetas.getChildren().add(crearTarjetaVisual(txtNombre.getText(), nuevaId.getValor(), nombreLista, contenedorTarjetas));
+                	try {
+	                    String tipoSeleccionado = comboTipo.getValue().equals("Checklist") ? "CHECKLIST" : "TAREA";
+	                    TarjetaId nuevaId = tarjetaService.crearTarjeta(txtNombre.getText(), tipoSeleccionado);
+	                    
+	                    tableroService.añadirTarjetaAListaPorNombre(miTableroId, nombreLista, nuevaId.getValor());
+	                    
+	                    tableroService.añadirTarjetaAListaPorNombre(miTableroId, nombreLista, nuevaId.getValor());
+	                    tableroService.registrarAccionManual(miTableroId, "Se creó la tarjeta '" + txtNombre.getText() + "' de tipo " + tipoSeleccionado + " en la lista '" + nombreLista + "'.");
+	                    contenedorTarjetas.getChildren().add(crearTarjetaVisual(txtNombre.getText(), nuevaId.getValor(), nombreLista, contenedorTarjetas));
+                	} catch (IllegalStateException ex) {
+                        Alert alerta = new Alert(Alert.AlertType.WARNING);
+                        alerta.setTitle("Límite de lista alcanzado");
+                        alerta.setHeaderText("No se puede crear la tarea");
+                        alerta.setContentText(ex.getMessage());
+                        alerta.showAndWait();
+                    }
                 }
             });
         });
@@ -325,6 +343,7 @@ public class TableroController {
             columna.getChildren().addAll(cabecera, contenedorTarjetas, btnAñadir);
         } else {
             btnBorrarLista.setVisible(false);
+            btnAjustes.setVisible(false);
             columna.getChildren().addAll(cabecera, contenedorTarjetas);
         }
         
@@ -526,16 +545,23 @@ public class TableroController {
                             boolean estaBloqueado = tableroService.obtenerTablero(miTableroId).isBloqueado();
                             crearColumnaVisual("Completadas", estaBloqueado);
                         }
-
-                        tableroService.moverTarjeta(miTableroId, tarjetaId, listaActual[0], listaDestino);
-                        
-                        cajaActual[0].getChildren().remove(tarjeta); 
-                        VBox nuevaCaja = columnasVisuales.get(listaDestino);
-                        
-                        if (nuevaCaja != null) {
-                            nuevaCaja.getChildren().add(tarjeta); 
-                            listaActual[0] = listaDestino;
-                            cajaActual[0] = nuevaCaja;
+                        try {
+	                        tableroService.moverTarjeta(miTableroId, tarjetaId, listaActual[0], listaDestino);
+	                        
+	                        cajaActual[0].getChildren().remove(tarjeta); 
+	                        VBox nuevaCaja = columnasVisuales.get(listaDestino);
+	                        
+	                        if (nuevaCaja != null) {
+	                            nuevaCaja.getChildren().add(tarjeta); 
+	                            listaActual[0] = listaDestino;
+	                            cajaActual[0] = nuevaCaja;
+	                        }
+                        } catch (IllegalStateException e) {
+                            Alert alertaRegla = new Alert(Alert.AlertType.WARNING);
+                            alertaRegla.setTitle("Movimiento no permitido");
+                            alertaRegla.setHeaderText("Regla de negocio incumplida");
+                            alertaRegla.setContentText(e.getMessage());
+                            alertaRegla.showAndWait();
                         }
                     }
                 }
@@ -698,5 +724,78 @@ public class TableroController {
             (int)(color.getRed() * 255),
             (int)(color.getGreen() * 255),
             (int)(color.getBlue() * 255));
+    }
+    
+    private void abrirAjustesLista(String nombreLista) {
+        try {
+            Tablero tablero = tableroService.obtenerTablero(miTableroId);
+            pds.gestiontareas.domain.model.tablero.model.ListaTareas listaDatos = tablero.getListas().stream()
+                    .filter(l -> l.getTitulo().equals(nombreLista))
+                    .findFirst().orElse(null);
+
+            if (listaDatos == null) return;
+
+            Dialog<ButtonType> dialog = new Dialog<>();
+            dialog.setTitle("Ajustes de la lista: " + nombreLista);
+            dialog.setHeaderText("Configurar reglas y límites Kanban");
+
+            // Creamos un panel (GridPane) para ordenar los textos y selectores
+            javafx.scene.layout.GridPane grid = new javafx.scene.layout.GridPane();
+            grid.setHgap(10); 
+            grid.setVgap(10);
+            grid.setPadding(new javafx.geometry.Insets(20, 20, 10, 10));
+
+            // Campo para el límite de tareas
+            TextField txtLimite = new TextField();
+            if (listaDatos.getLimiteTarjetas() != null) {
+                txtLimite.setText(String.valueOf(listaDatos.getLimiteTarjetas()));
+            }
+            txtLimite.setPromptText("Ej: 5 (Vacío = sin límite)");
+
+            // Selector para la lista obligatoria previa
+            ComboBox<String> comboRequerida = new ComboBox<>();
+            comboRequerida.getItems().add("Ninguna (Libre)");
+            for (pds.gestiontareas.domain.model.tablero.model.ListaTareas l : tablero.getListas()) {
+                if (!l.getTitulo().equals(nombreLista)) {
+                    comboRequerida.getItems().add(l.getTitulo());
+                }
+            }
+            
+            if (listaDatos.getListasPrecedentesRequeridas() != null && !listaDatos.getListasPrecedentesRequeridas().isEmpty()) {
+                comboRequerida.setValue(listaDatos.getListasPrecedentesRequeridas().get(0));
+            } else {
+                comboRequerida.setValue("Ninguna (Libre)");
+            }
+
+            grid.add(new Label("Límite máximo de tareas (WIP):"), 0, 0);
+            grid.add(txtLimite, 1, 0);
+            grid.add(new Label("Obligatorio venir desde la lista:"), 0, 1);
+            grid.add(comboRequerida, 1, 1);
+
+            dialog.getDialogPane().setContent(grid);
+            dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+            dialog.showAndWait().ifPresent(response -> {
+                if (response == ButtonType.OK) {
+                    Integer nuevoLimite = null;
+                    if (!txtLimite.getText().trim().isEmpty()) {
+                        try {
+                            nuevoLimite = Integer.parseInt(txtLimite.getText().trim());
+                        } catch (NumberFormatException e) {}
+                    }
+                    
+                    String requerida = comboRequerida.getValue();
+                    if ("Ninguna (Libre)".equals(requerida)) requerida = null;
+
+                    tableroService.actualizarReglasLista(miTableroId, nombreLista, nuevoLimite, requerida);
+                    
+                    contenedorListas.getChildren().clear();
+                    columnasVisuales.clear();
+                    cargarDatosTableroEnPantalla();
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

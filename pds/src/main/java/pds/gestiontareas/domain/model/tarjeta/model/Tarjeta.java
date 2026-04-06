@@ -10,6 +10,7 @@ public abstract class Tarjeta {
     protected String descripcion;
     protected boolean completada;
     protected List<Etiqueta> etiquetas;
+    protected List<String> listasVisitadas;
 
     public Tarjeta(String titulo, String descripcion) {
         this.id = new TarjetaId();
@@ -17,6 +18,7 @@ public abstract class Tarjeta {
         this.descripcion = descripcion;
         this.completada = false;
         this.etiquetas = new ArrayList<>();
+        this.listasVisitadas = new ArrayList<>();
     }
 
     public void marcarCompletada() { this.completada = true; }
@@ -30,4 +32,15 @@ public abstract class Tarjeta {
     public TarjetaId getId() { return id; }
     public String getTitulo() { return titulo; }
     public boolean isCompletada() { return completada; }
+    public List<String> getListasVisitadas() { return listasVisitadas; }
+    
+    public void registrarVisita(String nombreLista) {
+        if (!this.listasVisitadas.contains(nombreLista)) {
+            this.listasVisitadas.add(nombreLista);
+        }
+    }
+    
+    public boolean haVisitado(String nombreLista) {
+        return this.listasVisitadas.contains(nombreLista);
+    }
 }
