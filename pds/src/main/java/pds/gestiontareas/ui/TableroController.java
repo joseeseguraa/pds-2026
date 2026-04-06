@@ -190,36 +190,6 @@ public class TableroController {
         error.showAndWait();
     }
     
-    /*
-    private void cargarDatosTableroEnPantalla() {
-        Tablero tableroReal = tableroService.obtenerTablero(miTableroId);
-        boolean estaBloqueado = tableroReal.isBloqueado();
-        
-        if (btnBloquear != null) {
-            if (estaBloqueado) {
-                btnBloquear.setText("Desbloquear Tablero");
-                btnBloquear.setStyle("-fx-background-color: #ef5350; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
-            } else {
-                btnBloquear.setText("Bloquear Tablero");
-                btnBloquear.setStyle("-fx-background-color: rgba(255, 255, 255, 0.2); -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
-            }
-        }
-
-        for (ListaTareas lista : tableroReal.getListas()) {
-            VBox contenedorDeEstaLista = crearColumnaVisual(lista.getTitulo(), estaBloqueado);
-
-            if (lista.getTarjetasIds() != null) {
-                for (String idTarjeta : lista.getTarjetasIds()) {
-                    String tituloGuardado = tarjetaService.obtenerTituloTarjeta(idTarjeta);
-                    contenedorDeEstaLista.getChildren().add(
-                        crearTarjetaVisual(tituloGuardado, idTarjeta, lista.getTitulo(), contenedorDeEstaLista)
-                    );
-                }
-            }
-        }
-        crearBotonAñadirLista(estaBloqueado);
-    }
-    */
     private void cargarDatosTableroEnPantalla() {
         Tablero tableroReal = tableroService.obtenerTablero(miTableroId);
         boolean estaBloqueado = tableroReal.isBloqueado();
