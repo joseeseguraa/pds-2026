@@ -1,0 +1,14 @@
+nombre: "Proyecto Desarrollo Software"
+listas:
+  - nombre: "Backlog"
+    limite: 10
+    tarjetas:
+      - titulo: "Configurar Base de Datos"
+        tipo: "TAREA"
+      - titulo: "Crear Repositorio GitHub"
+        tipo: "TAREA"
+  - nombre: "En Progreso"
+    limite: 3
+    tarjetas: []
+  - nombre: "En Pruebas"
+  - nombre: "Hecho"

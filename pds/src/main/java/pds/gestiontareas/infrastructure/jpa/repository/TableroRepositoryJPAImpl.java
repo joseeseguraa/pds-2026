@@ -26,6 +26,7 @@ public class TableroRepositoryJPAImpl implements TableroRepository {
     }
 
     @Override
+    
     public void guardar(Tablero tablero) {
         TableroEntity entity = new TableroEntity();
         entity.setId(tablero.getId().getValor());
@@ -62,7 +63,7 @@ public class TableroRepositoryJPAImpl implements TableroRepository {
         
         jpaRepository.save(entity);
     }
-
+	
     @Override
     public Optional<Tablero> buscarPorId(TableroId id) {
         Optional<TableroEntity> entityOpt = jpaRepository.findById(id.getValor());

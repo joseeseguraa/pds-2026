@@ -74,6 +74,12 @@ public class TableroController {
     
     @FXML
     public void initialize() {
+    	
+    	javafx.application.Platform.setImplicitExit(false);
+    	
+    	pds.gestiontareas.application.PlantillaService plantillaService = 
+                new pds.gestiontareas.application.PlantillaService(tableroService, tarjetaService);
+    	
         boolean tableroCargado = false;
         
         while (!tableroCargado) {
@@ -84,9 +90,10 @@ public class TableroController {
             ButtonType btnCrear = new ButtonType("Crear Nuevo Tablero");
             ButtonType btnAcceder = new ButtonType("Acceder con ID");
             ButtonType btnRecuperar = new ButtonType("Recuperar por Email");
+            ButtonType btnImportar = new ButtonType("Importar YAML");
             ButtonType btnSalir = new ButtonType("Salir", ButtonData.CANCEL_CLOSE);
             
-            inicioDialog.getButtonTypes().setAll(btnCrear, btnAcceder, btnRecuperar, btnSalir);
+            inicioDialog.getButtonTypes().setAll(btnCrear, btnAcceder, btnRecuperar, btnImportar, btnSalir);
             
             Optional<ButtonType> resultado = inicioDialog.showAndWait();
             
@@ -175,6 +182,54 @@ public class TableroController {
                         }
                     }
                 }
+            } else if (resultado.isPresent() && resultado.get() == btnImportar) {
+            	TextInputDialog dialogEmail = new TextInputDialog();
+                dialogEmail.setTitle("Importar Plantilla");
+                dialogEmail.setHeaderText("Introduce tu correo electrónico para ser el dueño:");
+                dialogEmail.setContentText("Email:");
+                Optional<String> emailOpt = dialogEmail.showAndWait();
+                
+                if (emailOpt.isPresent() && !emailOpt.get().trim().isEmpty()) {
+                    String email = emailOpt.get().trim();
+                    
+                    if(!email.contains("@")) {
+                        mostrarError("Email inválido", "Por favor, introduce un correo real.");
+                        continue;
+                    }
+                    javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
+                    fileChooser.setTitle("Seleccionar Plantilla YAML");
+                    fileChooser.getExtensionFilters().add(
+                        new javafx.stage.FileChooser.ExtensionFilter("Archivos YAML (*.yaml, *.yml)", "*.yaml", "*.yml")
+                    );
+                    
+                    java.io.File archivoSeleccionado = fileChooser.showOpenDialog(null);
+                    
+                    if (archivoSeleccionado != null) {
+                        try {
+                            miTableroId = plantillaService.crearTableroDesdeYaml(archivoSeleccionado, email);
+                            
+                            Alert infoUrl = new Alert(Alert.AlertType.INFORMATION);
+                            infoUrl.setTitle("Plantilla Importada");
+                            infoUrl.setHeaderText("¡Tablero creado con éxito desde la plantilla!");
+                            
+                            TextArea areaTexto = new TextArea("URL/ID Privada:\n" + miTableroId.getValor());
+                            areaTexto.setEditable(false);
+                            areaTexto.setWrapText(true);
+                            areaTexto.setMaxHeight(60);
+                            
+                            infoUrl.getDialogPane().setContent(new VBox(10, 
+                                new Label("Guarda este código. Es tu URL privada para entrar o compartir:"), 
+                                areaTexto));
+                            infoUrl.showAndWait();
+                            
+                            tableroCargado = true; 
+                            
+                        } catch (Exception ex) {
+                            mostrarError("Error de Plantilla", "No se pudo leer el archivo YAML.\nDetalle: " + ex.getMessage());
+                        }
+                    }
+                }
+                
             } else {
                 System.exit(0);
             }
