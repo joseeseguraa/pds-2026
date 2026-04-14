@@ -1,2 +1,18 @@
-/.metadata
-pds/datos_pds_db.mv.db
+.metadata/
+.plugins/
+*.log
+*.lock
+.project
+.classpath
+.settings/
+
+# SonarLint
+.sonarlint/
+
+# Bases de datos temporales
+*.db
+*.trace.db
+*.mv.db
+
+# WebView cachés (los de tu lista de SWT)
+EBWebView/

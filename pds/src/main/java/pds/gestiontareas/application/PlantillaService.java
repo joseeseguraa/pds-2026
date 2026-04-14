@@ -30,7 +30,10 @@ public class PlantillaService {
             if (plantilla.getListas() != null) {
                 for (ListaPlantillaDTO listaDTO : plantilla.getListas()) {
                     
-                	tableroService.actualizarReglasLista(tableroId, listaDTO.getNombre(), listaDTO.getLimite(), null);
+                	tableroService.añadirListaATablero(tableroId, listaDTO.getNombre());               	
+                    if (listaDTO.getLimite() != null) {
+                        tableroService.actualizarReglasLista(tableroId, listaDTO.getNombre(), listaDTO.getLimite(), null);
+                    }
 
                     // Si la plantilla define un límite, se lo aplicamos
                     if (listaDTO.getLimite() != null) {
