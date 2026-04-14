@@ -20,12 +20,10 @@ class TableroTest {
     }
 
     @Test
-    void testCreacionTableroYListaCompletadas() {
+    void testCreacionTableroYListasVacias() {
         assertFalse(tablero.isBloqueado(), "El tablero debería crearse desbloqueado");
         
-        boolean tieneListaCompletadas = tablero.getListas().stream()
-                .anyMatch(lista -> lista.getTitulo().equals("Completadas"));
-        assertTrue(tieneListaCompletadas, "El tablero debe tener una lista de 'Completadas' al crearse");
+        assertTrue(tablero.getListas().isEmpty(), "El tablero debe nacer sin listas por defecto");
     }
 
     @Test

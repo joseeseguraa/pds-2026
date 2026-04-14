@@ -8,6 +8,9 @@ import pds.gestiontareas.domain.model.tarjeta.id.TarjetaId;
 
 import java.io.File;
 
+import org.springframework.stereotype.Service;
+
+@Service
 public class PlantillaService {
 	private final TableroService tableroService;
     private final TarjetaService tarjetaService;

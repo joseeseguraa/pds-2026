@@ -62,4 +62,18 @@ public class ListaTareas {
     public void añadirListaRequerida(String nombreLista) { 
     	this.listasPrecedentesRequeridas.add(nombreLista); 
     }
+    
+    public void validarReglasEntrada(pds.gestiontareas.domain.model.tarjeta.model.Tarjeta tarjeta, String nombreListaOrigen) {
+        if (this.limiteTarjetas != null && this.tarjetasIds.size() >= this.limiteTarjetas) {
+            throw new IllegalStateException("Límite alcanzado. La lista '" + this.titulo + "' tiene un límite de " + this.limiteTarjetas + " tareas.");
+        }
+        
+        if (nombreListaOrigen != null && !this.listasPrecedentesRequeridas.isEmpty()) {
+            for (String listaRequerida : this.listasPrecedentesRequeridas) {
+                if (!nombreListaOrigen.equals(listaRequerida) && !tarjeta.haVisitado(listaRequerida)) {
+                    throw new IllegalStateException("Flujo inválido. Para entrar a '" + this.titulo + "', la tarea debe haber pasado antes por '" + listaRequerida + "'.");
+                }
+            }
+        }
+    }
 }

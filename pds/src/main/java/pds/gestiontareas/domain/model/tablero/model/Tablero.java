@@ -31,8 +31,6 @@ public class Tablero {
         this.listas = new ArrayList<>();
         this.historial = new ArrayList<>();
         
-        this.listas.add(new ListaTareas("Completadas"));
-        
         registrarAccion("Tablero '" + nombre + "' creado por " + creador);
     }
     

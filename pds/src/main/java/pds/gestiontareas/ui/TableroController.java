@@ -33,6 +33,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import pds.gestiontareas.application.PlantillaService;
 import pds.gestiontareas.application.TableroService;
 import pds.gestiontareas.application.TarjetaService;
 import pds.gestiontareas.domain.model.tablero.id.TableroId;
@@ -52,6 +53,9 @@ public class TableroController {
     
     @Autowired
     private TarjetaService tarjetaService;
+    
+    @Autowired
+    private PlantillaService plantillaService;
 
     private TableroId miTableroId;
     
@@ -76,9 +80,6 @@ public class TableroController {
     public void initialize() {
     	
     	javafx.application.Platform.setImplicitExit(false);
-    	
-    	pds.gestiontareas.application.PlantillaService plantillaService = 
-                new pds.gestiontareas.application.PlantillaService(tableroService, tarjetaService);
     	
         boolean tableroCargado = false;
         
@@ -115,6 +116,7 @@ public class TableroController {
                     miTableroId = tableroService.crearTablero("Mi Proyecto PDS", email);
                     tableroService.añadirListaATablero(miTableroId, "Por Hacer");
                     tableroService.añadirListaATablero(miTableroId, "En Progreso");
+                    tableroService.añadirListaATablero(miTableroId, "Completadas");
                     
                     Alert infoUrl = new Alert(Alert.AlertType.INFORMATION);
                     infoUrl.setTitle("Tablero Creado");
