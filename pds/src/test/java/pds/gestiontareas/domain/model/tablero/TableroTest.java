@@ -50,15 +50,15 @@ class TableroTest {
         tablero.añadirLista("Origen");
         tablero.añadirLista("Destino");
         
-        String idO = tablero.getListas().get(1).getId();
-        String idD = tablero.getListas().get(2).getId();
+        String idO = tablero.getListas().get(0).getId();
+        String idD = tablero.getListas().get(1).getId();
         String tarjetaId = "T-1";
-
+    
         tablero.añadirTarjetaALista(tarjetaId, idO);
         
         tablero.moverTarjeta(tarjetaId, idO, idD);
-
-        assertFalse(tablero.getListas().get(1).getTarjetasIds().contains(tarjetaId));
-        assertTrue(tablero.getListas().get(2).getTarjetasIds().contains(tarjetaId));
+    
+        assertFalse(tablero.getListas().get(0).getTarjetasIds().contains(tarjetaId));
+        assertTrue(tablero.getListas().get(1).getTarjetasIds().contains(tarjetaId));
     }
 }
