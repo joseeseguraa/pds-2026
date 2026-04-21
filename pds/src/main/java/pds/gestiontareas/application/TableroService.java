@@ -41,6 +41,23 @@ public class TableroService {
         tablero.añadirLista(tituloLista);
         tableroRepository.guardar(tablero); 
     }
+    
+    
+    @Transactional
+    public TarjetaId crearTarjetaEnLista(TableroId tableroId, String nombreLista, String tituloTarjeta, String tipo) {
+        Tarjeta nuevaTarjeta;
+        if ("CHECKLIST".equals(tipo)) {
+            nuevaTarjeta = new pds.gestiontareas.domain.model.tarjeta.model.TarjetaChecklist(tituloTarjeta, "");
+        } else {
+            nuevaTarjeta = new pds.gestiontareas.domain.model.tarjeta.model.TarjetaTarea(tituloTarjeta, "");
+        }
+        tarjetaRepository.guardar(nuevaTarjeta);
+        TarjetaId nuevaId = nuevaTarjeta.getId();
+        añadirTarjetaAListaPorNombre(tableroId, nombreLista, nuevaId.getValor());
+        registrarAccionManual(tableroId, "Se creó la tarjeta '" + tituloTarjeta + "' de tipo " + tipo + " en la lista '" + nombreLista + "'.");
+        
+        return nuevaId;
+    }
 
     @Transactional
     public void bloquearTablero(TableroId tableroId) {
@@ -132,6 +149,13 @@ public class TableroService {
         
         tableroRepository.guardar(tablero);
     }
+    
+    @Transactional
+    public void eliminarTarjetaCompletamente(TableroId tableroId, String nombreLista, String tarjetaId, String nombreTarjeta) {
+        eliminarTarjetaDeLista(tableroId, nombreLista, tarjetaId);
+        tarjetaRepository.eliminar(new TarjetaId(tarjetaId));
+        registrarAccionManual(tableroId, "Se eliminó la tarjeta '" + nombreTarjeta + "'.");
+    }
 
     @Transactional
     public void alternarBloqueo(TableroId tableroId) {
@@ -171,7 +195,7 @@ public class TableroService {
                 .orElseThrow(() -> new IllegalArgumentException("El tablero no existe"));
                 
         tablero.eliminarLista(nombreLista);
-        
+        tablero.getHistorial().add(new TrazaAccion("Se eliminó la lista completa '" + nombreLista + "'."));
         tableroRepository.guardar(tablero);
     }
     
@@ -208,5 +232,41 @@ public class TableroService {
         }
         
         tableroRepository.guardar(tablero);
+    }
+    
+    @Transactional
+    public void completarTarjetaYBuscarDestino(TableroId tableroId, String tarjetaId, String nombreListaOrigen) {
+        Tablero tablero = tableroRepository.buscarPorId(tableroId)
+                .orElseThrow(() -> new IllegalArgumentException("El tablero no existe"));
+                
+        Tarjeta tarjeta = tarjetaRepository.buscarPorId(new TarjetaId(tarjetaId))
+                .orElseThrow(() -> new IllegalArgumentException("La tarjeta no existe"));
+
+        tarjeta.setCompletada(true);
+
+        boolean existeCompletadas = tablero.getListas().stream()
+                .anyMatch(l -> l.getTitulo().equals("Completadas"));
+
+        if (!existeCompletadas) {
+            tablero.añadirLista("Completadas");
+        }
+
+        if (!nombreListaOrigen.equals("Completadas")) {
+            ListaTareas origen = tablero.getListas().stream()
+                    .filter(l -> l.getTitulo().equals(nombreListaOrigen)).findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("La lista de origen no existe"));
+
+            ListaTareas destino = tablero.getListas().stream()
+                    .filter(l -> l.getTitulo().equals("Completadas")).findFirst()
+                    .orElseThrow();
+                    
+            tablero.moverTarjeta(tarjetaId, origen.getId(), destino.getId());
+            tarjeta.registrarVisita("Completadas");
+        }
+
+        tablero.getHistorial().add(new TrazaAccion("Se marcó como completada la tarjeta '" + tarjeta.getTitulo() + "' y se movió a Completadas."));
+        
+        tableroRepository.guardar(tablero);
+        tarjetaRepository.guardar(tarjeta);
     }
 }

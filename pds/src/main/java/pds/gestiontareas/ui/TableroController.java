@@ -343,7 +343,6 @@ public class TableroController {
             confirmacion.showAndWait().ifPresent(respuesta -> {
                 if (respuesta == ButtonType.OK) {
                     tableroService.eliminarLista(miTableroId, nombreLista);
-                    tableroService.registrarAccionManual(miTableroId, "Se eliminó la lista completa '" + nombreLista + "'.");
                     contenedorListas.getChildren().remove(columna);
                     columnasVisuales.remove(nombreLista);
                 }
@@ -375,24 +374,19 @@ public class TableroController {
             dialogCrear.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
             
             dialogCrear.showAndWait().ifPresent(btn -> {
-                if (btn == ButtonType.OK && !txtNombre.getText().trim().isEmpty()) {
-                	try {
-	                    String tipoSeleccionado = comboTipo.getValue().equals("Checklist") ? "CHECKLIST" : "TAREA";
-	                    TarjetaId nuevaId = tarjetaService.crearTarjeta(txtNombre.getText(), tipoSeleccionado);
-	                    
-	                    tableroService.añadirTarjetaAListaPorNombre(miTableroId, nombreLista, nuevaId.getValor());
-	                    
-	                    tableroService.añadirTarjetaAListaPorNombre(miTableroId, nombreLista, nuevaId.getValor());
-	                    tableroService.registrarAccionManual(miTableroId, "Se creó la tarjeta '" + txtNombre.getText() + "' de tipo " + tipoSeleccionado + " en la lista '" + nombreLista + "'.");
-	                    contenedorTarjetas.getChildren().add(crearTarjetaVisual(txtNombre.getText(), nuevaId.getValor(), nombreLista, contenedorTarjetas));
-                	} catch (IllegalStateException ex) {
-                        Alert alerta = new Alert(Alert.AlertType.WARNING);
-                        alerta.setTitle("Límite de lista alcanzado");
-                        alerta.setHeaderText("No se puede crear la tarea");
-                        alerta.setContentText(ex.getMessage());
-                        alerta.showAndWait();
-                    }
-                }
+            	if (btn == ButtonType.OK && !txtNombre.getText().trim().isEmpty()) {
+            	    try {
+            	        String tipoSeleccionado = comboTipo.getValue().equals("Checklist") ? "CHECKLIST" : "TAREA";            	        
+            	        TarjetaId nuevaId = tableroService.crearTarjetaEnLista(miTableroId, nombreLista, txtNombre.getText(), tipoSeleccionado);
+            	        contenedorTarjetas.getChildren().add(crearTarjetaVisual(txtNombre.getText(), nuevaId.getValor(), nombreLista, contenedorTarjetas));
+            	    } catch (IllegalStateException ex) {
+            	        Alert alerta = new Alert(Alert.AlertType.WARNING);
+            	        alerta.setTitle("Límite de lista alcanzado");
+            	        alerta.setHeaderText("No se puede crear la tarea");
+            	        alerta.setContentText(ex.getMessage());
+            	        alerta.showAndWait();
+            	    }
+            	}
             });
         });
 
@@ -481,7 +475,6 @@ public class TableroController {
                     String texto = txtNuevoItem.getText();
                     if (texto != null && !texto.trim().isEmpty()) {
                         tarjetaService.añadirItemChecklist(tarjetaId, texto);
-                        tableroService.registrarAccionManual(miTableroId, "Se añadió la subtarea '" + texto + "' a la tarjeta '" + textoTarea + "'.");
                         listaSubtareas.getChildren().add(crearFilaSubtarea(texto, false, tarjetaId, textoTarea, listaSubtareas));
                         txtNuevoItem.clear();
                     }
@@ -569,9 +562,9 @@ public class TableroController {
             Button botonEliminarInterfaz = (Button) dialog.getDialogPane().lookupButton(btnEliminar);
             if (botonEliminarInterfaz != null) {
                 botonEliminarInterfaz.addEventFilter(ActionEvent.ACTION, e -> {
-                    tableroService.registrarAccionManual(miTableroId, "Se eliminó la tarjeta '" + textoTarea + "' de la lista '" + listaActual[0] + "'.");
                     tableroService.eliminarTarjetaDeLista(miTableroId, listaActual[0], tarjetaId);
                     tarjetaService.eliminarTarjeta(tarjetaId);
+                    tableroService.eliminarTarjetaCompletamente(miTableroId, listaActual[0], tarjetaId, textoTarea);
                     cajaActual[0].getChildren().remove(tarjeta); 
                     dialog.close();
                     e.consume();
@@ -579,49 +572,45 @@ public class TableroController {
             }
 
             dialog.showAndWait().ifPresent(tipo -> {
-                if (tipo == btnGuardar) {
-                    tarjetaService.actualizarDescripcion(tarjetaId, txtDesc.getText());
+            	if (tipo == btnGuardar) {
+            	    tarjetaService.actualizarDescripcion(tarjetaId, txtDesc.getText());
 
-                    boolean estadoAnterior = datosActualizados.isCompletada();
-                    boolean estadoNuevo = chkCompletada.isSelected();
-                    
-                    if (estadoAnterior != estadoNuevo) {
-                        tarjetaService.cambiarEstadoCompletada(tarjetaId, estadoNuevo);
-                        if (estadoNuevo) {
-                            tableroService.registrarAccionManual(miTableroId, "Se marcó como completada la tarjeta '" + textoTarea + "'.");
-                        } else {
-                            tableroService.registrarAccionManual(miTableroId, "Se desmarcó como completada la tarjeta '" + textoTarea + "'.");
-                        }
-                    }
-                  
-                    String listaDestino = comboListas.getValue();
-                    if (!listaDestino.equals(listaActual[0])) {
-                        
-                        if (listaDestino.equals("Completadas") && !columnasVisuales.containsKey("Completadas")) {
-                            tableroService.añadirListaATablero(miTableroId, "Completadas");
-                            boolean estaBloqueado = tableroService.obtenerTablero(miTableroId).isBloqueado();
-                            crearColumnaVisual("Completadas", estaBloqueado);
-                        }
-                        try {
-	                        tableroService.moverTarjeta(miTableroId, tarjetaId, listaActual[0], listaDestino);
-	                        
-	                        cajaActual[0].getChildren().remove(tarjeta); 
-	                        VBox nuevaCaja = columnasVisuales.get(listaDestino);
-	                        
-	                        if (nuevaCaja != null) {
-	                            nuevaCaja.getChildren().add(tarjeta); 
-	                            listaActual[0] = listaDestino;
-	                            cajaActual[0] = nuevaCaja;
-	                        }
-                        } catch (IllegalStateException e) {
-                            Alert alertaRegla = new Alert(Alert.AlertType.WARNING);
-                            alertaRegla.setTitle("Movimiento no permitido");
-                            alertaRegla.setHeaderText("Regla de negocio incumplida");
-                            alertaRegla.setContentText(e.getMessage());
-                            alertaRegla.showAndWait();
-                        }
-                    }
-                }
+            	    boolean estadoAnterior = datosActualizados.isCompletada();
+            	    boolean estadoNuevo = chkCompletada.isSelected();
+            	    String listaDestino = comboListas.getValue();
+
+            	    if (!estadoAnterior && estadoNuevo) {
+            	        try {
+            	            tableroService.completarTarjetaYBuscarDestino(miTableroId, tarjetaId, listaActual[0]);
+
+            	            contenedorListas.getChildren().clear();
+            	            columnasVisuales.clear();
+            	            cargarDatosTableroEnPantalla();
+            	            
+            	        } catch (IllegalStateException e) {
+            	            mostrarError("Error al completar", e.getMessage());
+            	        }
+            	    } else {
+            	        if (!estadoNuevo && estadoAnterior)
+            	             tarjetaService.cambiarEstadoCompletada(tarjetaId, false);
+
+
+            	        if (!listaDestino.equals(listaActual[0])) {
+            	            try {
+            	                tableroService.moverTarjeta(miTableroId, tarjetaId, listaActual[0], listaDestino);
+            	                cajaActual[0].getChildren().remove(tarjeta); 
+            	                VBox nuevaCaja = columnasVisuales.get(listaDestino);
+            	                if (nuevaCaja != null) {
+            	                    nuevaCaja.getChildren().add(tarjeta); 
+            	                    listaActual[0] = listaDestino;
+            	                    cajaActual[0] = nuevaCaja;
+            	                }
+            	            } catch (IllegalStateException e) {
+            	                mostrarError("Movimiento no permitido", e.getMessage());
+            	            }
+            	        }
+            	    }
+            	}
             });
         });
         
@@ -637,8 +626,6 @@ public class TableroController {
         
         cb.selectedProperty().addListener((obs, old, newValue) -> {
             tarjetaService.alternarEstadoChecklist(tarjetaId, texto, newValue);
-            String estado = newValue ? "completó" : "desmarcó";
-            tableroService.registrarAccionManual(miTableroId, "Se " + estado + " la subtarea '" + texto + "' de la tarjeta '" + nombreTarjeta + "'.");
         });
 
         Button btnBorrar = new Button("✕");
@@ -649,7 +636,6 @@ public class TableroController {
 
         btnBorrar.setOnAction(e -> {
             tarjetaService.eliminarItemChecklist(tarjetaId, texto);
-            tableroService.registrarAccionManual(miTableroId, "Se eliminó la subtarea '" + texto + "' de la tarjeta '" + nombreTarjeta + "'.");
             contenedor.getChildren().remove(fila);
         });
 
@@ -796,20 +782,17 @@ public class TableroController {
             dialog.setTitle("Ajustes de la lista: " + nombreLista);
             dialog.setHeaderText("Configurar reglas y límites Kanban");
 
-            // Creamos un panel (GridPane) para ordenar los textos y selectores
             javafx.scene.layout.GridPane grid = new javafx.scene.layout.GridPane();
             grid.setHgap(10); 
             grid.setVgap(10);
             grid.setPadding(new javafx.geometry.Insets(20, 20, 10, 10));
 
-            // Campo para el límite de tareas
             TextField txtLimite = new TextField();
             if (listaDatos.getLimiteTarjetas() != null) {
                 txtLimite.setText(String.valueOf(listaDatos.getLimiteTarjetas()));
             }
             txtLimite.setPromptText("Ej: 5 (Vacío = sin límite)");
 
-            // Selector para la lista obligatoria previa
             ComboBox<String> comboRequerida = new ComboBox<>();
             comboRequerida.getItems().add("Ninguna (Libre)");
             for (pds.gestiontareas.domain.model.tablero.model.ListaTareas l : tablero.getListas()) {
