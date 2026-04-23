@@ -10,6 +10,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.effect.ColorAdjust?>
+<?import javafx.scene.control.TextField?>
 
 <StackPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="pds.gestiontareas.ui.TableroController"
@@ -25,13 +26,20 @@
     <BorderPane>
 
         <top>
-            <HBox spacing="15" styleClass="barra-superior">
-                
-                <Label text="Mi Tablero" styleClass="titulo"/>
-                
-                <Region HBox.hgrow="ALWAYS"/>
+		    <HBox spacing="15" styleClass="barra-superior">
+		        <Button text="⬅ Cambiar Tablero" onAction="#volverAlMenuPrincipal" 
+		                styleClass="btn-bloquear" 
+		                style="-fx-background-color: #607d8b; -fx-text-fill: white; -fx-cursor: hand;"/>
+		        
+		        <Label fx:id="lblNombreTablero" text="Cargando..." styleClass="titulo"/>
+		        
+		        <Region HBox.hgrow="ALWAYS"/>
             
 	            <Label text="Filtrar:" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-alignment: center; -fx-padding: 5 0 0 0;"/>
+                <Label text="Buscar:" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-alignment: center; -fx-padding: 5 0 0 0;"/>
+                <TextField fx:id="txtFiltroTexto" promptText="Nombre de tarea..." onKeyReleased="#aplicarFiltroTexto" style="-fx-pref-width: 140;"/>
+
+                <Label text=" Color:" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-alignment: center; -fx-padding: 5 0 0 0;"/>
                 <ColorPicker fx:id="colorPickerFiltro" onAction="#aplicarFiltro" style="-fx-background-color: white;"/>
                 <Button text="Sin Etiquetas" onAction="#filtrarSinEtiquetas" style="-fx-background-color: #9e9e9e; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"/>
                 <Button text="✕ Limpiar" onAction="#limpiarFiltro" style="-fx-background-color: #ef5350; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"/>

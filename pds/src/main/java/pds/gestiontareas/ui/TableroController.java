@@ -61,9 +61,15 @@ public class TableroController {
     
     private Map<String, VBox> columnasVisuales = new HashMap<>();
 
+    @FXML
+    private Label lblNombreTablero;
     
     @FXML
     private HBox contenedorListas;
+    
+    @FXML
+    private TextField txtFiltroTexto;
+    private String textoFiltroActual = "";
 
     @FXML
     private Region etiquetaColor;
@@ -99,28 +105,56 @@ public class TableroController {
             Optional<ButtonType> resultado = inicioDialog.showAndWait();
             
             if (resultado.isPresent() && resultado.get() == btnCrear) {
-                TextInputDialog dialogEmail = new TextInputDialog();
-                dialogEmail.setTitle("Nuevo Tablero");
-                dialogEmail.setHeaderText("Introduce tu correo electrónico para ser el dueño:");
-                dialogEmail.setContentText("Email:");
-                Optional<String> emailOpt = dialogEmail.showAndWait();
-                
-                if (emailOpt.isPresent() && !emailOpt.get().trim().isEmpty()) {
-                    String email = emailOpt.get().trim();
-                    
-                    if(!email.contains("@")) {
-                        mostrarError("Email inválido", "Por favor, introduce un correo real.");
+                Dialog<String[]> dialogCrear = new Dialog<>();
+                dialogCrear.setTitle("Nuevo Tablero");
+                dialogCrear.setHeaderText("Introduce los datos para tu nuevo tablero:");
+
+                ButtonType btnCrearTablero = new ButtonType("Crear Tablero", ButtonData.OK_DONE);
+                dialogCrear.getDialogPane().getButtonTypes().addAll(btnCrearTablero, ButtonType.CANCEL);
+
+                javafx.scene.layout.GridPane grid = new javafx.scene.layout.GridPane();
+                grid.setHgap(10);
+                grid.setVgap(10);
+                grid.setPadding(new javafx.geometry.Insets(20, 20, 10, 10));
+                TextField txtNombreTablero = new TextField();
+                txtNombreTablero.setPromptText("Ej: Proyecto PDS, Tareas Casa...");
+                TextField txtEmailDuenio = new TextField();
+                txtEmailDuenio.setPromptText("tu@email.com");
+                grid.add(new Label("Nombre del Tablero:"), 0, 0);
+                grid.add(txtNombreTablero, 1, 0);
+                grid.add(new Label("Tu Email:"), 0, 1);
+                grid.add(txtEmailDuenio, 1, 1);
+
+                dialogCrear.getDialogPane().setContent(grid);
+
+                dialogCrear.setResultConverter(dialogButton -> {
+                    if (dialogButton == btnCrearTablero) {
+                        return new String[]{txtNombreTablero.getText().trim(), txtEmailDuenio.getText().trim()};
+                    }
+                    return null;
+                });
+
+                Optional<String[]> resultadoCreacion = dialogCrear.showAndWait();
+
+                if (resultadoCreacion.isPresent()) {
+                    String[] datos = resultadoCreacion.get();
+                    String nombre = datos[0];
+                    String email = datos[1];
+
+                    if (nombre.isEmpty() || email.isEmpty() || !email.contains("@")) {
+                        mostrarError("Datos inválidos", "El nombre no puede estar vacío y el correo debe contener un '@'.");
                         continue;
                     }
 
-                    miTableroId = tableroService.crearTablero("Mi Proyecto PDS", email);
+                    miTableroId = tableroService.crearTablero(nombre, email);
+
                     tableroService.añadirListaATablero(miTableroId, "Por Hacer");
                     tableroService.añadirListaATablero(miTableroId, "En Progreso");
                     tableroService.añadirListaATablero(miTableroId, "Completadas");
-                    
+
                     Alert infoUrl = new Alert(Alert.AlertType.INFORMATION);
                     infoUrl.setTitle("Tablero Creado");
-                    infoUrl.setHeaderText("¡Tablero creado con éxito!");
+                    infoUrl.setHeaderText("¡Tablero '" + nombre + "' creado con éxito!");
                     
                     TextArea areaTexto = new TextArea("URL/ID Privada:\n" + miTableroId.getValor());
                     areaTexto.setEditable(false);
@@ -249,6 +283,19 @@ public class TableroController {
     
     private void cargarDatosTableroEnPantalla() {
         Tablero tableroReal = tableroService.obtenerTablero(miTableroId);
+
+        if (lblNombreTablero != null) {
+            String nombreCompleto = tableroReal.getNombre();
+            
+            if (nombreCompleto.length() > 15) {
+                lblNombreTablero.setText(nombreCompleto.substring(0, 15) + "...");
+            } else {
+                lblNombreTablero.setText(nombreCompleto);
+            }
+            
+            lblNombreTablero.setTooltip(new javafx.scene.control.Tooltip(nombreCompleto));
+        }
+
         boolean estaBloqueado = tableroReal.isBloqueado();
         
         if (btnBloquear != null) {
@@ -265,29 +312,34 @@ public class TableroController {
             VBox contenedorDeEstaLista = crearColumnaVisual(lista.getTitulo(), estaBloqueado);
 
             if (lista.getTarjetasIds() != null) {
-                for (String idTarjeta : lista.getTarjetasIds()) {
-                	try {
-	                    Tarjeta datosTarjeta = tarjetaService.obtenerTarjeta(idTarjeta);
-	                    
-	                    boolean pasaFiltro = false;
-	                    
-	                    if (colorFiltroActual == null) {
-	                        pasaFiltro = true; 
-	                    } else if (colorFiltroActual.equals("SIN_ETIQUETA")) {
-	                        pasaFiltro = datosTarjeta.getEtiquetas().isEmpty();
-	                    } else {
-	                        pasaFiltro = datosTarjeta.tieneEtiqueta(colorFiltroActual); 
-	                    }
-	
-	                    if (pasaFiltro) {
-	                        contenedorDeEstaLista.getChildren().add(
-	                            crearTarjetaVisual(datosTarjeta.getTitulo(), idTarjeta, lista.getTitulo(), contenedorDeEstaLista)
-	                        );
-	                    }
-                	} catch (IllegalArgumentException ex) {
-                        System.out.println("Aviso: Ignorando tarjeta fantasma con ID " + idTarjeta);
-                    }
-                }
+            	for (String idTarjeta : lista.getTarjetasIds()) {
+            	    try {
+            	        Tarjeta datosTarjeta = tarjetaService.obtenerTarjeta(idTarjeta);
+
+            	        boolean pasaFiltroColor = false;
+            	        if (colorFiltroActual == null) {
+            	            pasaFiltroColor = true; 
+            	        } else if (colorFiltroActual.equals("SIN_ETIQUETA")) {
+            	            pasaFiltroColor = datosTarjeta.getEtiquetas().isEmpty();
+            	        } else {
+            	            pasaFiltroColor = datosTarjeta.tieneEtiqueta(colorFiltroActual); 
+            	        }
+
+            	        boolean pasaFiltroTexto = true;
+            	        if (textoFiltroActual != null && !textoFiltroActual.trim().isEmpty()) {
+            	            pasaFiltroTexto = datosTarjeta.getTitulo().toLowerCase().contains(textoFiltroActual.toLowerCase());
+            	        }
+
+            	        if (pasaFiltroColor && pasaFiltroTexto) {
+            	            contenedorDeEstaLista.getChildren().add(
+            	                crearTarjetaVisual(datosTarjeta.getTitulo(), idTarjeta, lista.getTitulo(), contenedorDeEstaLista)
+            	            );
+            	        }
+
+            	    } catch (IllegalArgumentException ex) {
+            	        System.out.println("Aviso: Ignorando tarjeta fantasma con ID " + idTarjeta);
+            	    }
+            	}
             }
         }
         crearBotonAñadirLista(estaBloqueado);
@@ -743,6 +795,17 @@ public class TableroController {
             cargarDatosTableroEnPantalla();
         }
     }
+    
+    @FXML
+    public void aplicarFiltroTexto(javafx.scene.input.KeyEvent event) {
+        if (txtFiltroTexto != null) {
+            textoFiltroActual = txtFiltroTexto.getText();
+
+            contenedorListas.getChildren().clear();
+            columnasVisuales.clear();
+            cargarDatosTableroEnPantalla();
+        }
+    }
 
     @FXML
     public void filtrarSinEtiquetas() {
@@ -756,6 +819,11 @@ public class TableroController {
     @FXML
     public void limpiarFiltro() {
         colorFiltroActual = null; 
+        textoFiltroActual = "";
+        
+        if (txtFiltroTexto != null) {
+            txtFiltroTexto.clear();
+        }
         
         contenedorListas.getChildren().clear();
         columnasVisuales.clear();
@@ -837,5 +905,16 @@ public class TableroController {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+    
+    @FXML
+    public void volverAlMenuPrincipal() {
+        miTableroId = null;
+        if (contenedorListas != null) {
+            contenedorListas.getChildren().clear();
+        }
+        columnasVisuales.clear();
+        
+        initialize();
     }
 }
