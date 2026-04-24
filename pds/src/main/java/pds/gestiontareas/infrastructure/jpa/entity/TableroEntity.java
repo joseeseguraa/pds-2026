@@ -1,6 +1,7 @@
 package pds.gestiontareas.infrastructure.jpa.entity;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.OrderColumn;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
@@ -26,6 +27,7 @@ public class TableroEntity {
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "tablero_id")
+    @OrderColumn(name = "orden_lista")
     private List<ListaTareasEntity> listas = new ArrayList<>();
 
     @ElementCollection(fetch = FetchType.EAGER)

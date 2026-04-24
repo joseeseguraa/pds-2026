@@ -17,14 +17,12 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.ColorPicker;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
@@ -33,16 +31,16 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import pds.gestiontareas.application.PlantillaService;
 import pds.gestiontareas.application.TableroService;
 import pds.gestiontareas.application.TarjetaService;
+import pds.gestiontareas.application.dto.ListaDTO;
+import pds.gestiontareas.application.dto.TableroDTO;
 import pds.gestiontareas.domain.model.tablero.id.TableroId;
-import pds.gestiontareas.domain.model.tablero.model.ListaTareas;
 import pds.gestiontareas.domain.model.tablero.model.Tablero;
 import pds.gestiontareas.domain.model.tarjeta.id.TarjetaId;
-import pds.gestiontareas.domain.model.tarjeta.model.Etiqueta;
-import pds.gestiontareas.domain.model.tarjeta.model.ItemChecklist;
 import pds.gestiontareas.domain.model.tarjeta.model.Tarjeta;
-import pds.gestiontareas.domain.model.tarjeta.model.TarjetaChecklist;
+
 
 @Controller
 public class TableroController {
@@ -52,14 +50,23 @@ public class TableroController {
     
     @Autowired
     private TarjetaService tarjetaService;
+    
+    @Autowired
+    private PlantillaService plantillaService;
 
     private TableroId miTableroId;
     
     private Map<String, VBox> columnasVisuales = new HashMap<>();
 
+    @FXML
+    private Label lblNombreTablero;
     
     @FXML
     private HBox contenedorListas;
+    
+    @FXML
+    private TextField txtFiltroTexto;
+    private String textoFiltroActual = "";
 
     @FXML
     private Region etiquetaColor;
@@ -76,9 +83,6 @@ public class TableroController {
     public void initialize() {
     	
     	javafx.application.Platform.setImplicitExit(false);
-    	
-    	pds.gestiontareas.application.PlantillaService plantillaService = 
-                new pds.gestiontareas.application.PlantillaService(tableroService, tarjetaService);
     	
         boolean tableroCargado = false;
         
@@ -98,27 +102,56 @@ public class TableroController {
             Optional<ButtonType> resultado = inicioDialog.showAndWait();
             
             if (resultado.isPresent() && resultado.get() == btnCrear) {
-                TextInputDialog dialogEmail = new TextInputDialog();
-                dialogEmail.setTitle("Nuevo Tablero");
-                dialogEmail.setHeaderText("Introduce tu correo electrónico para ser el dueño:");
-                dialogEmail.setContentText("Email:");
-                Optional<String> emailOpt = dialogEmail.showAndWait();
-                
-                if (emailOpt.isPresent() && !emailOpt.get().trim().isEmpty()) {
-                    String email = emailOpt.get().trim();
-                    
-                    if(!email.contains("@")) {
-                        mostrarError("Email inválido", "Por favor, introduce un correo real.");
+                Dialog<String[]> dialogCrear = new Dialog<>();
+                dialogCrear.setTitle("Nuevo Tablero");
+                dialogCrear.setHeaderText("Introduce los datos para tu nuevo tablero:");
+
+                ButtonType btnCrearTablero = new ButtonType("Crear Tablero", ButtonData.OK_DONE);
+                dialogCrear.getDialogPane().getButtonTypes().addAll(btnCrearTablero, ButtonType.CANCEL);
+
+                javafx.scene.layout.GridPane grid = new javafx.scene.layout.GridPane();
+                grid.setHgap(10);
+                grid.setVgap(10);
+                grid.setPadding(new javafx.geometry.Insets(20, 20, 10, 10));
+                TextField txtNombreTablero = new TextField();
+                txtNombreTablero.setPromptText("Ej: Proyecto PDS, Tareas Casa...");
+                TextField txtEmailDuenio = new TextField();
+                txtEmailDuenio.setPromptText("tu@email.com");
+                grid.add(new Label("Nombre del Tablero:"), 0, 0);
+                grid.add(txtNombreTablero, 1, 0);
+                grid.add(new Label("Tu Email:"), 0, 1);
+                grid.add(txtEmailDuenio, 1, 1);
+
+                dialogCrear.getDialogPane().setContent(grid);
+
+                dialogCrear.setResultConverter(dialogButton -> {
+                    if (dialogButton == btnCrearTablero) {
+                        return new String[]{txtNombreTablero.getText().trim(), txtEmailDuenio.getText().trim()};
+                    }
+                    return null;
+                });
+
+                Optional<String[]> resultadoCreacion = dialogCrear.showAndWait();
+
+                if (resultadoCreacion.isPresent()) {
+                    String[] datos = resultadoCreacion.get();
+                    String nombre = datos[0];
+                    String email = datos[1];
+
+                    if (nombre.isEmpty() || email.isEmpty() || !email.contains("@")) {
+                        mostrarError("Datos inválidos", "El nombre no puede estar vacío y el correo debe contener un '@'.");
                         continue;
                     }
 
-                    miTableroId = tableroService.crearTablero("Mi Proyecto PDS", email);
+                    miTableroId = tableroService.crearTablero(nombre, email);
+
                     tableroService.añadirListaATablero(miTableroId, "Por Hacer");
                     tableroService.añadirListaATablero(miTableroId, "En Progreso");
-                    
+                    tableroService.añadirListaATablero(miTableroId, "Completadas");
+
                     Alert infoUrl = new Alert(Alert.AlertType.INFORMATION);
                     infoUrl.setTitle("Tablero Creado");
-                    infoUrl.setHeaderText("¡Tablero creado con éxito!");
+                    infoUrl.setHeaderText("¡Tablero '" + nombre + "' creado con éxito!");
                     
                     TextArea areaTexto = new TextArea("URL/ID Privada:\n" + miTableroId.getValor());
                     areaTexto.setEditable(false);
@@ -246,7 +279,20 @@ public class TableroController {
     }
     
     private void cargarDatosTableroEnPantalla() {
-        Tablero tableroReal = tableroService.obtenerTablero(miTableroId);
+    	TableroDTO tableroReal = tableroService.obtenerTableroDTO(miTableroId);
+
+        if (lblNombreTablero != null) {
+            String nombreCompleto = tableroReal.getNombre();
+            
+            if (nombreCompleto.length() > 15) {
+                lblNombreTablero.setText(nombreCompleto.substring(0, 15) + "...");
+            } else {
+                lblNombreTablero.setText(nombreCompleto);
+            }
+            
+            lblNombreTablero.setTooltip(new javafx.scene.control.Tooltip(nombreCompleto));
+        }
+
         boolean estaBloqueado = tableroReal.isBloqueado();
         
         if (btnBloquear != null) {
@@ -259,33 +305,40 @@ public class TableroController {
             }
         }
 
-        for (ListaTareas lista : tableroReal.getListas()) {
+        for (ListaDTO lista : tableroReal.getListas()) {
             VBox contenedorDeEstaLista = crearColumnaVisual(lista.getTitulo(), estaBloqueado);
 
             if (lista.getTarjetasIds() != null) {
-                for (String idTarjeta : lista.getTarjetasIds()) {
-                	try {
-	                    Tarjeta datosTarjeta = tarjetaService.obtenerTarjeta(idTarjeta);
-	                    
-	                    boolean pasaFiltro = false;
-	                    
-	                    if (colorFiltroActual == null) {
-	                        pasaFiltro = true; 
-	                    } else if (colorFiltroActual.equals("SIN_ETIQUETA")) {
-	                        pasaFiltro = datosTarjeta.getEtiquetas().isEmpty();
-	                    } else {
-	                        pasaFiltro = datosTarjeta.tieneEtiqueta(colorFiltroActual); 
-	                    }
-	
-	                    if (pasaFiltro) {
-	                        contenedorDeEstaLista.getChildren().add(
-	                            crearTarjetaVisual(datosTarjeta.getTitulo(), idTarjeta, lista.getTitulo(), contenedorDeEstaLista)
-	                        );
-	                    }
-                	} catch (IllegalArgumentException ex) {
-                        System.out.println("Aviso: Ignorando tarjeta fantasma con ID " + idTarjeta);
-                    }
-                }
+            	for (String idTarjeta : lista.getTarjetasIds()) {
+            	    try {
+            	        Tarjeta datosTarjeta = tarjetaService.obtenerTarjeta(idTarjeta);
+
+            	        boolean pasaFiltroColor = false;
+            	        if (colorFiltroActual == null) {
+            	            pasaFiltroColor = true; 
+            	        } else if (colorFiltroActual.equals("SIN_ETIQUETA")) {
+            	            pasaFiltroColor = datosTarjeta.getEtiquetas().isEmpty();
+            	        } else {
+            	            pasaFiltroColor = datosTarjeta.tieneEtiqueta(colorFiltroActual); 
+            	        }
+
+            	        boolean pasaFiltroTexto = true;
+            	        if (textoFiltroActual != null && !textoFiltroActual.trim().isEmpty()) {
+            	            pasaFiltroTexto = datosTarjeta.getTitulo().toLowerCase().contains(textoFiltroActual.toLowerCase());
+            	        }
+
+            	        if (pasaFiltroColor && pasaFiltroTexto) {
+            	        	TarjetaUIComponent tarjetaGrafica = new TarjetaUIComponent(
+            	        		    datosTarjeta.getTitulo(), idTarjeta, lista.getTitulo(), 
+            	        		    miTableroId, tarjetaService, tableroService, this
+            	        	);
+            	        	contenedorDeEstaLista.getChildren().add(tarjetaGrafica);
+            	        }
+
+            	    } catch (IllegalArgumentException ex) {
+            	        System.out.println("Aviso: Ignorando tarjeta fantasma con ID " + idTarjeta);
+            	    }
+            	}
             }
         }
         crearBotonAñadirLista(estaBloqueado);
@@ -341,7 +394,6 @@ public class TableroController {
             confirmacion.showAndWait().ifPresent(respuesta -> {
                 if (respuesta == ButtonType.OK) {
                     tableroService.eliminarLista(miTableroId, nombreLista);
-                    tableroService.registrarAccionManual(miTableroId, "Se eliminó la lista completa '" + nombreLista + "'.");
                     contenedorListas.getChildren().remove(columna);
                     columnasVisuales.remove(nombreLista);
                 }
@@ -373,24 +425,23 @@ public class TableroController {
             dialogCrear.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
             
             dialogCrear.showAndWait().ifPresent(btn -> {
-                if (btn == ButtonType.OK && !txtNombre.getText().trim().isEmpty()) {
-                	try {
-	                    String tipoSeleccionado = comboTipo.getValue().equals("Checklist") ? "CHECKLIST" : "TAREA";
-	                    TarjetaId nuevaId = tarjetaService.crearTarjeta(txtNombre.getText(), tipoSeleccionado);
-	                    
-	                    tableroService.añadirTarjetaAListaPorNombre(miTableroId, nombreLista, nuevaId.getValor());
-	                    
-	                    tableroService.añadirTarjetaAListaPorNombre(miTableroId, nombreLista, nuevaId.getValor());
-	                    tableroService.registrarAccionManual(miTableroId, "Se creó la tarjeta '" + txtNombre.getText() + "' de tipo " + tipoSeleccionado + " en la lista '" + nombreLista + "'.");
-	                    contenedorTarjetas.getChildren().add(crearTarjetaVisual(txtNombre.getText(), nuevaId.getValor(), nombreLista, contenedorTarjetas));
-                	} catch (IllegalStateException ex) {
-                        Alert alerta = new Alert(Alert.AlertType.WARNING);
-                        alerta.setTitle("Límite de lista alcanzado");
-                        alerta.setHeaderText("No se puede crear la tarea");
-                        alerta.setContentText(ex.getMessage());
-                        alerta.showAndWait();
-                    }
-                }
+            	if (btn == ButtonType.OK && !txtNombre.getText().trim().isEmpty()) {
+            	    try {
+            	        String tipoSeleccionado = comboTipo.getValue().equals("Checklist") ? "CHECKLIST" : "TAREA";            	        
+            	        TarjetaId nuevaId = tableroService.crearTarjetaEnLista(miTableroId, nombreLista, txtNombre.getText(), tipoSeleccionado);
+            	        TarjetaUIComponent tarjetaGrafica = new TarjetaUIComponent(
+            	        	    txtNombre.getText(), nuevaId.getValor(), nombreLista, 
+            	        	    miTableroId, tarjetaService, tableroService, this
+            	        	);
+            	        	contenedorTarjetas.getChildren().add(tarjetaGrafica);
+            	    } catch (IllegalStateException ex) {
+            	        Alert alerta = new Alert(Alert.AlertType.WARNING);
+            	        alerta.setTitle("Límite de lista alcanzado");
+            	        alerta.setHeaderText("No se puede crear la tarea");
+            	        alerta.setContentText(ex.getMessage());
+            	        alerta.showAndWait();
+            	    }
+            	}
             });
         });
 
@@ -409,249 +460,6 @@ public class TableroController {
         
         columnasVisuales.put(nombreLista, contenedorTarjetas);
         return contenedorTarjetas; 
-    }
-    
-
-    private VBox crearTarjetaVisual(String textoTarea, String tarjetaId, String nombreListaOrigen, VBox contenedorActual) {
-        VBox tarjeta = new VBox();
-        tarjeta.getStyleClass().add("tarjeta");
-
-        final String[] listaActual = {nombreListaOrigen};
-        final VBox[] cajaActual = {contenedorActual};
-
-        HBox contenedorEtiquetas = new HBox(5);
-        Tarjeta datosTarjeta = tarjetaService.obtenerTarjeta(tarjetaId);
-        for (Etiqueta etiqueta : datosTarjeta.getEtiquetas()) {
-            Region rectColor = new Region();
-            rectColor.setStyle("-fx-background-color: " + etiqueta.getColor() + "; -fx-min-width: 40; -fx-min-height: 8; -fx-background-radius: 4;");
-            contenedorEtiquetas.getChildren().add(rectColor);
-        }
-
-        Label contenido = new Label(textoTarea);
-        contenido.setWrapText(true);
-        contenido.getStyleClass().add("texto-tarjeta");
-        
-        tarjeta.getChildren().addAll(contenedorEtiquetas, contenido);
-
-        tarjeta.setOnMouseClicked(event -> {
-            Tarjeta datosActualizados = tarjetaService.obtenerTarjeta(tarjetaId);
-
-            Dialog<ButtonType> dialog = new Dialog<>();
-            dialog.setTitle("Detalles de la Tarjeta");
-            dialog.setHeaderText("Tarea: " + textoTarea);
-
-            dialog.setResizable(true);
-            dialog.getDialogPane().setMinWidth(450);
-            dialog.getDialogPane().setPrefWidth(520);
-
-            VBox contenidoDialogo = new VBox(20);
-            contenidoDialogo.setStyle("-fx-padding: 20; -fx-background-color: #f4f5f7;");
-
-            VBox cajaDesc = new VBox(8);
-            Label lblDesc = new Label("Descripción:");
-            lblDesc.setStyle("-fx-font-weight: bold; -fx-text-fill: #172b4d;");
-            TextArea txtDesc = new TextArea(datosActualizados.getDescripcion());
-            txtDesc.setWrapText(true);
-            txtDesc.setPrefRowCount(3);
-            cajaDesc.getChildren().addAll(lblDesc, txtDesc);
-
-            VBox cajaChecklistCompleta = new VBox(8);
-            
-            if (datosActualizados instanceof TarjetaChecklist) {
-                TarjetaChecklist tarjetaChecklist = (TarjetaChecklist) datosActualizados;
-                
-                Label lblChecklist = new Label("Checklist (Subtareas):");
-                lblChecklist.setStyle("-fx-font-weight: bold; -fx-text-fill: #172b4d;");
-                
-                VBox listaSubtareas = new VBox(8);
-                if (tarjetaChecklist.getChecklist() != null) {
-                    for (ItemChecklist item : tarjetaChecklist.getChecklist()) {
-                        listaSubtareas.getChildren().add(crearFilaSubtarea(item.getTexto(), item.isCompletado(), tarjetaId, textoTarea, listaSubtareas));
-                    }
-                }
-
-                TextField txtNuevoItem = new TextField();
-                txtNuevoItem.setPromptText("Añadir un elemento...");
-                Button btnAñadirItem = new Button("Añadir");
-                HBox controlesChecklist = new HBox(10, txtNuevoItem, btnAñadirItem);
-                
-                btnAñadirItem.setOnAction(ev -> {
-                    String texto = txtNuevoItem.getText();
-                    if (texto != null && !texto.trim().isEmpty()) {
-                        tarjetaService.añadirItemChecklist(tarjetaId, texto);
-                        tableroService.registrarAccionManual(miTableroId, "Se añadió la subtarea '" + texto + "' a la tarjeta '" + textoTarea + "'.");
-                        listaSubtareas.getChildren().add(crearFilaSubtarea(texto, false, tarjetaId, textoTarea, listaSubtareas));
-                        txtNuevoItem.clear();
-                    }
-                });
-                cajaChecklistCompleta.getChildren().addAll(lblChecklist, listaSubtareas, controlesChecklist);
-            }
-
-            VBox cajaEtiquetas = new VBox(8);
-            Label lblColor = new Label("Gestionar Etiquetas:");
-            lblColor.setStyle("-fx-font-weight: bold; -fx-text-fill: #172b4d;");
-            ColorPicker colorPicker = new ColorPicker(Color.web("#ef5350"));
-            Button btnAñadirColor = new Button("Añadir Color");
-            Button btnQuitarColor = new Button("Quitar Color");
-            HBox controlesColor = new HBox(10, colorPicker, btnAñadirColor, btnQuitarColor);
-            cajaEtiquetas.getChildren().addAll(lblColor, controlesColor);
-
-            btnAñadirColor.setOnAction(e -> {
-                String hexColor = "#" + colorPicker.getValue().toString().substring(2, 8);
-                if (!tarjetaService.obtenerTarjeta(tarjetaId).tieneEtiqueta(hexColor)) {
-                    tarjetaService.añadirEtiqueta(tarjetaId, "Etiqueta", hexColor);
-                    Region nuevaEtiqueta = new Region();
-                    nuevaEtiqueta.setStyle("-fx-background-color: " + hexColor + "; -fx-min-width: 40; -fx-min-height: 8; -fx-background-radius: 4;");
-                    contenedorEtiquetas.getChildren().add(nuevaEtiqueta);
-                }
-            });
-
-            btnQuitarColor.setOnAction(e -> {
-                String hexColor = "#" + colorPicker.getValue().toString().substring(2, 8);
-                tarjetaService.quitarEtiqueta(tarjetaId, hexColor);
-                contenedorEtiquetas.getChildren().clear();
-                for (Etiqueta etiqueta : tarjetaService.obtenerTarjeta(tarjetaId).getEtiquetas()) {
-                    Region rectColor = new Region();
-                    rectColor.setStyle("-fx-background-color: " + etiqueta.getColor() + "; -fx-min-width: 40; -fx-min-height: 8; -fx-background-radius: 4;");
-                    contenedorEtiquetas.getChildren().add(rectColor);
-                }
-            });
-
-            Label lblMover = new Label("Mover a lista:");
-            lblMover.setStyle("-fx-font-weight: bold; -fx-text-fill: #172b4d;");
-            ComboBox<String> comboListas = new ComboBox<>();
-            comboListas.getItems().addAll(tableroService.obtenerNombresListas(miTableroId)); 
-            comboListas.setValue(listaActual[0]); 
-            HBox cajaMover = new HBox(10, lblMover, comboListas);
-            cajaMover.setAlignment(Pos.CENTER_LEFT);
-
-            CheckBox chkCompletada = new CheckBox("Marcar tarjeta como COMPLETADA");
-            chkCompletada.setSelected(datosActualizados.isCompletada());
-            chkCompletada.setStyle("-fx-font-weight: bold; -fx-text-fill: #2e7d32; -fx-font-size: 14px; -fx-padding: 0 0 10 0;");
-           
-            chkCompletada.selectedProperty().addListener((obs, old, isCompleted) -> {
-                if (isCompleted) {
-                    if (!comboListas.getItems().contains("Completadas")) {
-                        comboListas.getItems().add("Completadas");
-                    }
-                    comboListas.setValue("Completadas");
-                } else {
-                    comboListas.setValue(listaActual[0]);
-                }
-            });
-            
-            comboListas.valueProperty().addListener((obs, oldVal, newVal) -> {
-                if (newVal != null) {
-                    if (newVal.equals("Completadas")) {
-                        chkCompletada.setSelected(true);
-                    } else {
-                        chkCompletada.setSelected(false);
-                    }
-                }
-            });
-            
-            contenidoDialogo.getChildren().addAll(chkCompletada, cajaDesc, cajaChecklistCompleta, cajaEtiquetas, cajaMover);
-            
-            ScrollPane scrollPane = new ScrollPane(contenidoDialogo);
-            scrollPane.setFitToWidth(true); 
-            scrollPane.setStyle("-fx-background-color: transparent; -fx-background: #f4f5f7; -fx-border-color: transparent;");
-            
-            dialog.getDialogPane().setContent(scrollPane);
-
-            ButtonType btnGuardar = new ButtonType("Guardar Cambios", ButtonData.OK_DONE);
-            ButtonType btnCancelar = new ButtonType("Cancelar", ButtonData.CANCEL_CLOSE);
-            ButtonType btnEliminar = new ButtonType("Eliminar Tarjeta", ButtonData.LEFT);
-
-            dialog.getDialogPane().getButtonTypes().setAll(btnEliminar, btnGuardar, btnCancelar);
-
-            Button botonEliminarInterfaz = (Button) dialog.getDialogPane().lookupButton(btnEliminar);
-            if (botonEliminarInterfaz != null) {
-                botonEliminarInterfaz.addEventFilter(ActionEvent.ACTION, e -> {
-                    tableroService.registrarAccionManual(miTableroId, "Se eliminó la tarjeta '" + textoTarea + "' de la lista '" + listaActual[0] + "'.");
-                    tableroService.eliminarTarjetaDeLista(miTableroId, listaActual[0], tarjetaId);
-                    tarjetaService.eliminarTarjeta(tarjetaId);
-                    cajaActual[0].getChildren().remove(tarjeta); 
-                    dialog.close();
-                    e.consume();
-                });
-            }
-
-            dialog.showAndWait().ifPresent(tipo -> {
-                if (tipo == btnGuardar) {
-                    tarjetaService.actualizarDescripcion(tarjetaId, txtDesc.getText());
-
-                    boolean estadoAnterior = datosActualizados.isCompletada();
-                    boolean estadoNuevo = chkCompletada.isSelected();
-                    
-                    if (estadoAnterior != estadoNuevo) {
-                        tarjetaService.cambiarEstadoCompletada(tarjetaId, estadoNuevo);
-                        if (estadoNuevo) {
-                            tableroService.registrarAccionManual(miTableroId, "Se marcó como completada la tarjeta '" + textoTarea + "'.");
-                        } else {
-                            tableroService.registrarAccionManual(miTableroId, "Se desmarcó como completada la tarjeta '" + textoTarea + "'.");
-                        }
-                    }
-                  
-                    String listaDestino = comboListas.getValue();
-                    if (!listaDestino.equals(listaActual[0])) {
-                        
-                        if (listaDestino.equals("Completadas") && !columnasVisuales.containsKey("Completadas")) {
-                            tableroService.añadirListaATablero(miTableroId, "Completadas");
-                            boolean estaBloqueado = tableroService.obtenerTablero(miTableroId).isBloqueado();
-                            crearColumnaVisual("Completadas", estaBloqueado);
-                        }
-                        try {
-	                        tableroService.moverTarjeta(miTableroId, tarjetaId, listaActual[0], listaDestino);
-	                        
-	                        cajaActual[0].getChildren().remove(tarjeta); 
-	                        VBox nuevaCaja = columnasVisuales.get(listaDestino);
-	                        
-	                        if (nuevaCaja != null) {
-	                            nuevaCaja.getChildren().add(tarjeta); 
-	                            listaActual[0] = listaDestino;
-	                            cajaActual[0] = nuevaCaja;
-	                        }
-                        } catch (IllegalStateException e) {
-                            Alert alertaRegla = new Alert(Alert.AlertType.WARNING);
-                            alertaRegla.setTitle("Movimiento no permitido");
-                            alertaRegla.setHeaderText("Regla de negocio incumplida");
-                            alertaRegla.setContentText(e.getMessage());
-                            alertaRegla.showAndWait();
-                        }
-                    }
-                }
-            });
-        });
-        
-        return tarjeta;
-    }
-    
-    private HBox crearFilaSubtarea(String texto, boolean completado, String tarjetaId, String nombreTarjeta, VBox contenedor) {
-        CheckBox cb = new CheckBox(texto);
-        cb.setSelected(completado);
-        cb.setStyle("-fx-text-fill: #172b4d;");
-        cb.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(cb, Priority.ALWAYS);
-        
-        cb.selectedProperty().addListener((obs, old, newValue) -> {
-            tarjetaService.alternarEstadoChecklist(tarjetaId, texto, newValue);
-            String estado = newValue ? "completó" : "desmarcó";
-            tableroService.registrarAccionManual(miTableroId, "Se " + estado + " la subtarea '" + texto + "' de la tarjeta '" + nombreTarjeta + "'.");
-        });
-
-        Button btnBorrar = new Button("✕");
-        btnBorrar.setStyle("-fx-background-color: transparent; -fx-text-fill: #ef5350; -fx-cursor: hand; -fx-font-weight: bold; -fx-padding: 0 5;");
-        
-        HBox fila = new HBox(5, cb, btnBorrar);
-        fila.setAlignment(Pos.CENTER_LEFT);
-
-        btnBorrar.setOnAction(e -> {
-            tarjetaService.eliminarItemChecklist(tarjetaId, texto);
-            tableroService.registrarAccionManual(miTableroId, "Se eliminó la subtarea '" + texto + "' de la tarjeta '" + nombreTarjeta + "'.");
-            contenedor.getChildren().remove(fila);
-        });
-
-        return fila;
     }
 
     private void crearBotonAñadirLista(boolean estaBloqueado) {
@@ -755,6 +563,17 @@ public class TableroController {
             cargarDatosTableroEnPantalla();
         }
     }
+    
+    @FXML
+    public void aplicarFiltroTexto(javafx.scene.input.KeyEvent event) {
+        if (txtFiltroTexto != null) {
+            textoFiltroActual = txtFiltroTexto.getText();
+
+            contenedorListas.getChildren().clear();
+            columnasVisuales.clear();
+            cargarDatosTableroEnPantalla();
+        }
+    }
 
     @FXML
     public void filtrarSinEtiquetas() {
@@ -768,6 +587,11 @@ public class TableroController {
     @FXML
     public void limpiarFiltro() {
         colorFiltroActual = null; 
+        textoFiltroActual = "";
+        
+        if (txtFiltroTexto != null) {
+            txtFiltroTexto.clear();
+        }
         
         contenedorListas.getChildren().clear();
         columnasVisuales.clear();
@@ -794,20 +618,17 @@ public class TableroController {
             dialog.setTitle("Ajustes de la lista: " + nombreLista);
             dialog.setHeaderText("Configurar reglas y límites Kanban");
 
-            // Creamos un panel (GridPane) para ordenar los textos y selectores
             javafx.scene.layout.GridPane grid = new javafx.scene.layout.GridPane();
             grid.setHgap(10); 
             grid.setVgap(10);
             grid.setPadding(new javafx.geometry.Insets(20, 20, 10, 10));
 
-            // Campo para el límite de tareas
             TextField txtLimite = new TextField();
             if (listaDatos.getLimiteTarjetas() != null) {
                 txtLimite.setText(String.valueOf(listaDatos.getLimiteTarjetas()));
             }
             txtLimite.setPromptText("Ej: 5 (Vacío = sin límite)");
 
-            // Selector para la lista obligatoria previa
             ComboBox<String> comboRequerida = new ComboBox<>();
             comboRequerida.getItems().add("Ninguna (Libre)");
             for (pds.gestiontareas.domain.model.tablero.model.ListaTareas l : tablero.getListas()) {
@@ -852,5 +673,24 @@ public class TableroController {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+    
+    public void recargarTablero() {
+        if (contenedorListas != null) {
+            contenedorListas.getChildren().clear();
+        }
+        columnasVisuales.clear();
+        cargarDatosTableroEnPantalla();
+    }
+    
+    @FXML
+    public void volverAlMenuPrincipal() {
+        miTableroId = null;
+        if (contenedorListas != null) {
+            contenedorListas.getChildren().clear();
+        }
+        columnasVisuales.clear();
+        
+        initialize();
     }
 }
