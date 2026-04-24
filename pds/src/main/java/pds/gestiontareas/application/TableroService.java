@@ -6,6 +6,8 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import pds.gestiontareas.application.dto.ListaDTO;
+import pds.gestiontareas.application.dto.TableroDTO;
 import pds.gestiontareas.domain.model.tablero.id.TableroId;
 import pds.gestiontareas.domain.model.tablero.model.ListaTareas;
 import pds.gestiontareas.domain.model.tablero.model.Tablero;
@@ -268,5 +270,24 @@ public class TableroService {
         
         tableroRepository.guardar(tablero);
         tarjetaRepository.guardar(tarjeta);
+    }
+    
+    public TableroDTO obtenerTableroDTO(TableroId tableroId) {
+        Tablero tablero = tableroRepository.buscarPorId(tableroId)
+                .orElseThrow(() -> new IllegalArgumentException("El tablero no existe"));
+        
+        List<ListaDTO> listasDTO = tablero.getListas().stream()
+                .map(lista -> new ListaDTO(
+                        lista.getId(), 
+                        lista.getTitulo(), 
+                        lista.getTarjetasIds()))
+                .collect(Collectors.toList());
+                
+        return new TableroDTO(
+                tablero.getId().getValor(),
+                tablero.getNombre(),
+                tablero.isBloqueado(),
+                listasDTO
+        );
     }
 }
