@@ -554,6 +554,33 @@ public class TableroController {
     }
     
     @FXML
+    public void compartirTableroUI() {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Compartir Tablero");
+        dialog.setHeaderText("Invita a otros usuarios a colaborar");
+
+        TextField txtDueño = new TextField();
+        txtDueño.setPromptText("Tu email (Para verificar que eres el dueño)");
+        TextField txtInvitado = new TextField();
+        txtInvitado.setPromptText("Email a invitar");
+
+        VBox content = new VBox(10, new Label("Firma de autorización:"), txtDueño, new Label("Usuario a invitar:"), txtInvitado);
+        dialog.getDialogPane().setContent(content);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        dialog.showAndWait().ifPresent(btn -> {
+            if (btn == ButtonType.OK) {
+                try {
+                	tableroService.compartirTablero(miTableroId, txtDueño.getText().trim(), txtInvitado.getText().trim());
+                    mostrarInformacion("Éxito", "El tablero se ha compartido con " + txtInvitado.getText().trim());
+                } catch (Exception e) {
+                    mostrarError("No se pudo compartir", e.getMessage());
+                }
+            }
+        });
+    }
+    
+    @FXML
     public void aplicarFiltro() {
         if (colorPickerFiltro != null && colorPickerFiltro.getValue() != null) {
             colorFiltroActual = "#" + colorPickerFiltro.getValue().toString().substring(2, 8);
@@ -681,6 +708,13 @@ public class TableroController {
         }
         columnasVisuales.clear();
         cargarDatosTableroEnPantalla();
+    }
+    
+    private void mostrarInformacion(String titulo, String mensaje) {
+        Alert info = new Alert(Alert.AlertType.INFORMATION);
+        info.setHeaderText(titulo);
+        info.setContentText(mensaje);
+        info.showAndWait();
     }
     
     @FXML

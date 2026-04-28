@@ -53,6 +53,10 @@ public class TarjetaRepositoryJPAImpl implements TarjetaRepository {
         entity.setChecklist(checklistEntities);
         entity.setListasVisitadas(new ArrayList<>(tarjeta.getListasVisitadas()));
         
+        java.util.Map<String, String> permisosEntity = new java.util.HashMap<>();
+        tarjeta.getPermisosUsuarios().forEach((email, permiso) -> permisosEntity.put(email, permiso.name()));
+        entity.setPermisosUsuarios(permisosEntity);
+        
         jpaRepository.save(entity);
     }
     
@@ -86,6 +90,12 @@ public class TarjetaRepositoryJPAImpl implements TarjetaRepository {
                 for (String visitada : entity.getListasVisitadas()) {
                     tarjeta.registrarVisita(visitada);
                 }
+            }
+            
+            if (entity.getPermisosUsuarios() != null) {
+                entity.getPermisosUsuarios().forEach((email, permisoStr) -> {
+                    tarjeta.asignarPermiso(email, pds.gestiontareas.domain.model.tarjeta.model.PermisoAcceso.valueOf(permisoStr));
+                });
             }
             
             return tarjeta;

@@ -5,6 +5,8 @@ import pds.gestiontareas.domain.model.tablero.id.TableroId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Agregado Raíz: Tablero.
@@ -22,6 +24,7 @@ public class Tablero {
     private boolean bloqueado;
     private List<ListaTareas> listas;
     private List<TrazaAccion> historial;
+    private Set<String> usuariosCompartidos = new HashSet<>();
 
     public Tablero(String nombre, String creador) {
         this.id = new TableroId();
@@ -109,10 +112,18 @@ public class Tablero {
         }
     }
     
+    public void compartirCon(String emailUsuario) {
+        if (this.creador.equalsIgnoreCase(emailUsuario)) return; // El creador ya es dueño
+        this.usuariosCompartidos.add(emailUsuario);
+        registrarAccion("Tablero compartido con el usuario: " + emailUsuario);
+    }
+    
     public TableroId getId() { return id; }
     public String getNombre() { return nombre; }
     public boolean isBloqueado() { return bloqueado; }
     public List<ListaTareas> getListas() { return listas; }
     public List<TrazaAccion> getHistorial() { return historial; }
     public String getCreador() { return creador; }
+    public Set<String> getUsuariosCompartidos() { return usuariosCompartidos; }
+    public void setUsuariosCompartidos(Set<String> usuariosCompartidos) { this.usuariosCompartidos = usuariosCompartidos; }
 }

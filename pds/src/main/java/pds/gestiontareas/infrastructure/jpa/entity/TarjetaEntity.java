@@ -2,7 +2,9 @@ package pds.gestiontareas.infrastructure.jpa.entity;
 
 import jakarta.persistence.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name = "tarjetas")
@@ -28,6 +30,15 @@ public class TarjetaEntity {
     @CollectionTable(name = "tarjetas_visitadas", joinColumns = @JoinColumn(name = "tarjeta_id"))
     @Column(name = "nombre_lista_visitada")
     private List<String> listasVisitadas = new ArrayList<>();
+    
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "tarjetas_permisos", joinColumns = @JoinColumn(name = "tarjeta_id"))
+    @MapKeyColumn(name = "email_usuario")
+    @Column(name = "nivel_permiso")
+    private Map<String, String> permisosUsuarios = new HashMap<>();
+
+    public Map<String, String> getPermisosUsuarios() { return permisosUsuarios; }
+    public void setPermisosUsuarios(Map<String, String> permisosUsuarios) { this.permisosUsuarios = permisosUsuarios; }
     
     public TarjetaEntity() {}
 

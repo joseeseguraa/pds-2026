@@ -2,7 +2,9 @@ package pds.gestiontareas.domain.model.tarjeta.model;
 
 import pds.gestiontareas.domain.model.tarjeta.id.TarjetaId;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public abstract class Tarjeta {
     protected TarjetaId id;
@@ -11,6 +13,7 @@ public abstract class Tarjeta {
     protected boolean completada;
     protected List<Etiqueta> etiquetas;
     protected List<String> listasVisitadas;
+    protected Map<String, PermisoAcceso> permisosUsuarios = new HashMap<>();
 
     public Tarjeta(String titulo, String descripcion) {
         this.id = new TarjetaId();
@@ -33,6 +36,8 @@ public abstract class Tarjeta {
     public String getTitulo() { return titulo; }
     public boolean isCompletada() { return completada; }
     public List<String> getListasVisitadas() { return listasVisitadas; }
+    public Map<String, PermisoAcceso> getPermisosUsuarios() { return permisosUsuarios; }
+    public void setPermisosUsuarios(Map<String, PermisoAcceso> permisosUsuarios) { this.permisosUsuarios = permisosUsuarios; }
     
     public void registrarVisita(String nombreLista) {
         if (!this.listasVisitadas.contains(nombreLista)) {
@@ -42,5 +47,19 @@ public abstract class Tarjeta {
     
     public boolean haVisitado(String nombreLista) {
         return this.listasVisitadas.contains(nombreLista);
+    }
+    
+    public void asignarPermiso(String email, PermisoAcceso permiso) {
+        this.permisosUsuarios.put(email, permiso);
+    }
+
+    public boolean puedeLeer(String emailUsuario, String emailDueño) {
+        if (emailUsuario.equalsIgnoreCase(emailDueño)) return true;
+        return permisosUsuarios.containsKey(emailUsuario); 
+    }
+
+    public boolean puedeEscribir(String emailUsuario, String emailDueño) {
+        if (emailUsuario.equalsIgnoreCase(emailDueño)) return true;
+        return permisosUsuarios.get(emailUsuario) == PermisoAcceso.ESCRITURA;
     }
 }

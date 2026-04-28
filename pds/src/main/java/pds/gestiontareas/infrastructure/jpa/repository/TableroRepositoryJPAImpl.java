@@ -34,6 +34,7 @@ public class TableroRepositoryJPAImpl implements TableroRepository {
         entity.setBloqueado(tablero.isBloqueado());
         
         entity.setEmailCreador(tablero.getCreador());
+        entity.setUsuariosCompartidos(new java.util.HashSet<>(tablero.getUsuariosCompartidos()));
         
         List<ListaTareasEntity> listasEntities = new ArrayList<>();
         
@@ -103,6 +104,10 @@ public class TableroRepositoryJPAImpl implements TableroRepository {
             entity.isBloqueado(),
             listasDominio
         );
+        
+        if (entity.getUsuariosCompartidos() != null) {
+            tableroReconstruido.setUsuariosCompartidos(new java.util.HashSet<>(entity.getUsuariosCompartidos()));
+        }
 
         if (entity.getHistorial() != null) {
             for (TrazaAccionEmbeddable trazaEmb : entity.getHistorial()) {

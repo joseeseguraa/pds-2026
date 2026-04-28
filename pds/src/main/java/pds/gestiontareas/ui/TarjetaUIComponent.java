@@ -13,6 +13,7 @@ import pds.gestiontareas.domain.model.tarjeta.model.Etiqueta;
 import pds.gestiontareas.domain.model.tarjeta.model.ItemChecklist;
 import pds.gestiontareas.domain.model.tarjeta.model.Tarjeta;
 import pds.gestiontareas.domain.model.tarjeta.model.TarjetaChecklist;
+import pds.gestiontareas.domain.model.tablero.model.Tablero;
 
 public class TarjetaUIComponent extends VBox {
 
@@ -139,6 +140,59 @@ public class TarjetaUIComponent extends VBox {
         comboListas.setValue(nombreListaOrigen); 
         HBox cajaMover = new HBox(10, lblMover, comboListas);
         cajaMover.setAlignment(Pos.CENTER_LEFT);
+        
+        VBox cajaPermisos = new VBox(8);
+        Label lblPermisos = new Label("Gestionar Permisos de Usuario:");
+        lblPermisos.setStyle("-fx-font-weight: bold; -fx-text-fill: #172b4d;");
+
+        Tablero tableroActual = tableroService.obtenerTablero(miTableroId);
+        if (tableroActual.getUsuariosCompartidos() != null && !tableroActual.getUsuariosCompartidos().isEmpty()) {
+            ComboBox<String> comboUsuarios = new ComboBox<>();
+            comboUsuarios.getItems().addAll(tableroActual.getUsuariosCompartidos());
+            comboUsuarios.setPromptText("Usuario invitado");
+
+            ComboBox<String> comboNiveles = new ComboBox<>();
+            comboNiveles.getItems().addAll("LECTURA", "ESCRITURA");
+            comboNiveles.setPromptText("Nivel");
+
+            TextField txtEmailDueño = new TextField();
+            txtEmailDueño.setPromptText("Tu email (Dueño)");
+            txtEmailDueño.setPrefWidth(120);
+
+            Button btnAsignarPermiso = new Button("Asignar");
+            btnAsignarPermiso.setStyle("-fx-background-color: #0052cc; -fx-text-fill: white; -fx-cursor: hand;");
+            
+            HBox controlesPermisos = new HBox(10, comboUsuarios, comboNiveles, txtEmailDueño, btnAsignarPermiso);
+            cajaPermisos.getChildren().addAll(lblPermisos, controlesPermisos);
+
+            btnAsignarPermiso.setOnAction(e -> {
+                if (comboUsuarios.getValue() == null || comboNiveles.getValue() == null || txtEmailDueño.getText().trim().isEmpty()) {
+                    Alert error = new Alert(Alert.AlertType.ERROR);
+                    error.setHeaderText("Faltan datos");
+                    error.setContentText("Rellena todos los campos para asignar el permiso.");
+                    error.showAndWait();
+                    return;
+                }
+                try {
+                    // LLamada al servicio usando las variables de esta clase
+                    tableroService.asignarPermisoTarjeta(miTableroId, tarjetaId, txtEmailDueño.getText().trim(), comboUsuarios.getValue(), comboNiveles.getValue());
+                    
+                    Alert info = new Alert(Alert.AlertType.INFORMATION);
+                    info.setHeaderText("Éxito");
+                    info.setContentText("Permiso de " + comboNiveles.getValue() + " asignado a " + comboUsuarios.getValue());
+                    info.showAndWait();
+                } catch (Exception ex) {
+                    Alert error = new Alert(Alert.AlertType.ERROR);
+                    error.setHeaderText("Acceso Denegado");
+                    error.setContentText(ex.getMessage());
+                    error.showAndWait();
+                }
+            });
+        } else {
+            Label lblNoCompartido = new Label("El tablero no está compartido. Usa el botón 👤+ del tablero principal.");
+            lblNoCompartido.setStyle("-fx-text-fill: #7a869a; -fx-font-style: italic;");
+            cajaPermisos.getChildren().addAll(lblPermisos, lblNoCompartido);
+        }
 
         CheckBox chkCompletada = new CheckBox("Marcar tarjeta como COMPLETADA");
         chkCompletada.setSelected(datosActualizados.isCompletada());
@@ -161,7 +215,7 @@ public class TarjetaUIComponent extends VBox {
             }
         });
         
-        contenidoDialogo.getChildren().addAll(chkCompletada, cajaDesc, cajaChecklistCompleta, cajaEtiquetas, cajaMover);
+        contenidoDialogo.getChildren().addAll(chkCompletada, cajaDesc, cajaChecklistCompleta, cajaEtiquetas, cajaMover, cajaPermisos);
         ScrollPane scrollPane = new ScrollPane(contenidoDialogo);
         scrollPane.setFitToWidth(true); 
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: #f4f5f7; -fx-border-color: transparent;");

@@ -47,8 +47,12 @@
                 <Region HBox.hgrow="ALWAYS"/>
                 
                 <Button fx:id="btnBloquear" text="Bloquear Tablero" styleClass="btn-bloquear" onAction="#alternarBloqueoUI"/>                
-				<Button fx:id="btnHistorial" text="Historial" styleClass="btn-bloquear" style="-fx-background-color: #0079bf; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" onAction="#mostrarHistorial"/>            
+				<Button fx:id="btnHistorial" text="Historial" styleClass="btn-bloquear" style="-fx-background-color: #0079bf; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" onAction="#mostrarHistorial"/>                        	
             
+                <Button text="👤+" onAction="#compartirTableroUI" style="-fx-background-color: #28a745; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-background-radius: 50em; -fx-min-width: 40px; -fx-min-height: 40px; -fx-cursor: hand;">
+                    <tooltip><javafx.scene.control.Tooltip text="Compartir Tablero"/></tooltip>
+                </Button>
+                
             </HBox>
         </top>
 

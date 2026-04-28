@@ -290,4 +290,37 @@ public class TableroService {
                 listasDTO
         );
     }
+    
+    @Transactional
+    public void compartirTablero(TableroId tableroId, String emailDueño, String emailACompartir) {
+        Tablero tablero = obtenerTablero(tableroId);
+        
+        if (!tablero.getCreador().equalsIgnoreCase(emailDueño)) {
+            throw new SecurityException("Solo el dueño del tablero puede compartirlo.");
+        }
+        
+        tablero.compartirCon(emailACompartir);
+        tableroRepository.guardar(tablero);
+    }
+    
+    @Transactional
+    public void asignarPermisoTarjeta(TableroId tableroId, String tarjetaId, String emailDueño, String emailUsuario, String nivelPermiso) {
+        Tablero tablero = obtenerTablero(tableroId);
+        
+        if (!tablero.getCreador().equalsIgnoreCase(emailDueño)) {
+            throw new SecurityException("Solo el dueño puede asignar permisos granulares.");
+        }
+        
+        if (!tablero.getUsuariosCompartidos().contains(emailUsuario)) {
+            throw new IllegalArgumentException("El usuario debe estar primero invitado al tablero para recibir permisos en sus tarjetas.");
+        }
+        
+        Tarjeta tarjeta = tarjetaRepository.buscarPorId(new TarjetaId(tarjetaId))
+                .orElseThrow(() -> new IllegalArgumentException("La tarjeta no existe"));
+                
+        // El nivelPermiso esperado será "LECTURA" o "ESCRITURA"
+        tarjeta.asignarPermiso(emailUsuario, pds.gestiontareas.domain.model.tarjeta.model.PermisoAcceso.valueOf(nivelPermiso.toUpperCase()));
+        
+        tarjetaRepository.guardar(tarjeta);
+    }
 }
