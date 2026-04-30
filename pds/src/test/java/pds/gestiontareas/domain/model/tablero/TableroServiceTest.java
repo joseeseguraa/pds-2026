@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import java.util.ArrayList;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import pds.gestiontareas.application.TableroService;
+import pds.gestiontareas.domain.model.tablero.id.ListaTareasId;
 import pds.gestiontareas.domain.model.tablero.id.TableroId;
 import pds.gestiontareas.domain.model.tablero.model.Tablero;
 import pds.gestiontareas.domain.model.tablero.repository.TableroRepository;
@@ -41,7 +43,8 @@ public class TableroServiceTest {
         MockitoAnnotations.openMocks(this);
 
         tableroId = new TableroId("tablero-123");
-        tableroPrueba = new Tablero(tableroId, "Tablero Test", "dueño@test.com", false, new java.util.ArrayList<>());
+        // CORRECCIÓN 1: El constructor ahora requiere la lista de usuarios compartidos al final
+        tableroPrueba = new Tablero(tableroId, "Tablero Test", "dueño@test.com", false, new ArrayList<>(), new ArrayList<>());
         tableroPrueba.añadirLista("Por Hacer");
         
         tarjetaPrueba = new TarjetaTarea("Hacer tests", "Aprender a testear");
@@ -63,7 +66,8 @@ public class TableroServiceTest {
 
     @Test
     void completarTarjetaYBuscarDestino_DebeCrearListaCompletadasSiNoExiste() {
-        String idListaPorHacer = tableroPrueba.getListas().get(0).getId();
+        // CORRECCIÓN 2: El ID devuelto es de tipo ListaTareasId, no String
+        ListaTareasId idListaPorHacer = tableroPrueba.getListas().get(0).getId();
         tableroPrueba.añadirTarjetaALista(tarjetaPrueba.getId().getValor(), idListaPorHacer);
         
         when(tableroRepository.buscarPorId(tableroId)).thenReturn(Optional.of(tableroPrueba));
@@ -82,7 +86,8 @@ public class TableroServiceTest {
 
     @Test
     void eliminarTarjetaCompletamente_DebeEliminarDeListaYDeRepositorio() {
-        String idListaPorHacer = tableroPrueba.getListas().get(0).getId();
+        // CORRECCIÓN 3: El ID devuelto es de tipo ListaTareasId, no String
+        ListaTareasId idListaPorHacer = tableroPrueba.getListas().get(0).getId();
         tableroPrueba.añadirTarjetaALista(tarjetaPrueba.getId().getValor(), idListaPorHacer);
         
         when(tableroRepository.buscarPorId(tableroId)).thenReturn(Optional.of(tableroPrueba));

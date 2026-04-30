@@ -3,13 +3,17 @@ package pds.gestiontareas.application;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import pds.gestiontareas.application.dto.ItemChecklistDTO;
+import pds.gestiontareas.application.dto.TarjetaDTO;
 import pds.gestiontareas.domain.model.tarjeta.id.TarjetaId;
 import pds.gestiontareas.domain.model.tarjeta.model.Etiqueta;
-import pds.gestiontareas.domain.model.tarjeta.model.ItemChecklist;
 import pds.gestiontareas.domain.model.tarjeta.model.Tarjeta;
 import pds.gestiontareas.domain.model.tarjeta.model.TarjetaChecklist;
 import pds.gestiontareas.domain.model.tarjeta.model.TarjetaTarea;
 import pds.gestiontareas.domain.model.tarjeta.repository.TarjetaRepository;
+
+import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 @Service
 public class TarjetaService {
@@ -20,6 +24,7 @@ public class TarjetaService {
         this.tarjetaRepository = tarjetaRepository;
     }
 
+    @Transactional
     public TarjetaId crearTarjeta(String titulo, String tipo) {
         Tarjeta nuevaTarjeta;
         if ("CHECKLIST".equals(tipo)) {
@@ -33,13 +38,44 @@ public class TarjetaService {
     
     public String obtenerTituloTarjeta(String tarjetaIdStr) {
         return tarjetaRepository.buscarPorId(new TarjetaId(tarjetaIdStr))
-                .map(t -> t.getTitulo())
+                .map(Tarjeta::getTitulo)
                 .orElse("Tarea desconocida");
     }
     
-    public Tarjeta obtenerTarjeta(String tarjetaId) {
-        return tarjetaRepository.buscarPorId(new TarjetaId(tarjetaId))
-                .orElseThrow(() -> new IllegalArgumentException("Tarjeta no encontrada"));
+    // Método interno que devuelve la ENTIDAD (usado por la lógica de negocio)
+    public Tarjeta obtenerTarjeta(String tarjetaIdStr) {
+        return tarjetaRepository.buscarPorId(new TarjetaId(tarjetaIdStr))
+                .orElseThrow(() -> new IllegalArgumentException("Tarjeta no encontrada: " + tarjetaIdStr));
+    }
+
+    // Devuelve un DTO completo (usado por la UI - JavaFX)
+    public TarjetaDTO obtenerDatosTarjeta(String tarjetaIdStr) {
+        Tarjeta tarjeta = obtenerTarjeta(tarjetaIdStr);
+        return mapearATarjetaDTO(tarjeta);
+    }
+
+    // Método auxiliar para asegurar un mapeo perfecto de Entidad a DTO
+    public TarjetaDTO mapearATarjetaDTO(Tarjeta tarjeta) {
+        TarjetaDTO dto = new TarjetaDTO();
+        dto.setId(tarjeta.getId().getValor());
+        dto.setTitulo(tarjeta.getTitulo());
+        dto.setDescripcion(tarjeta.getDescripcion());
+        dto.setCompletada(tarjeta.isCompletada());
+        
+        dto.setColoresEtiquetas(tarjeta.getEtiquetas().stream()
+                .map(Etiqueta::getColorHex)
+                .collect(Collectors.toList()));
+        
+        if (tarjeta instanceof TarjetaChecklist) {
+            dto.setEsChecklist(true);
+            dto.setItemsChecklist(((TarjetaChecklist) tarjeta).getChecklist().stream()
+                    .map(item -> new ItemChecklistDTO(item.getTexto(), item.isCompletado()))
+                    .collect(Collectors.toList()));
+        } else {
+            dto.setEsChecklist(false);
+            dto.setItemsChecklist(new ArrayList<>());
+        }
+        return dto;
     }
 
     @Transactional
@@ -52,7 +88,6 @@ public class TarjetaService {
     @Transactional
     public void añadirEtiqueta(String tarjetaId, String nombre, String colorHex) {
         Tarjeta tarjeta = obtenerTarjeta(tarjetaId);
-        
         if (!tarjeta.tieneEtiqueta(colorHex)) {
             tarjeta.añadirEtiqueta(new Etiqueta(nombre, colorHex));
             tarjetaRepository.guardar(tarjeta);
@@ -73,45 +108,29 @@ public class TarjetaService {
 
     @Transactional
     public void añadirItemChecklist(String tarjetaIdStr, String texto) {
-        Tarjeta tarjeta = tarjetaRepository.buscarPorId(new TarjetaId(tarjetaIdStr))
-                .orElseThrow(() -> new IllegalArgumentException("La tarjeta no existe"));
-                
-        if (tarjeta instanceof TarjetaChecklist) {
-            ((TarjetaChecklist) tarjeta).getChecklist().add(new ItemChecklist(texto, false));
-            tarjetaRepository.guardar(tarjeta);
-        }
+        Tarjeta tarjeta = obtenerTarjeta(tarjetaIdStr);
+        tarjeta.añadirItemChecklist(texto);
+        tarjetaRepository.guardar(tarjeta);
     }
 
     @Transactional
     public void alternarEstadoChecklist(String tarjetaIdStr, String textoItem, boolean estaCompletado) {
-        Tarjeta tarjeta = tarjetaRepository.buscarPorId(new TarjetaId(tarjetaIdStr))
-                .orElseThrow(() -> new IllegalArgumentException("La tarjeta no existe"));
-                
-        for (ItemChecklist item : ((TarjetaChecklist) tarjeta).getChecklist()) {
-            if (item.getTexto().equals(textoItem)) {
-                item.setCompletado(estaCompletado);
-                break;
-            }
-        }
+        Tarjeta tarjeta = obtenerTarjeta(tarjetaIdStr);
+        tarjeta.actualizarEstadoItemChecklist(textoItem, estaCompletado);
         tarjetaRepository.guardar(tarjeta);
     }
     
     @Transactional
     public void eliminarItemChecklist(String tarjetaIdStr, String textoItem) {
-        Tarjeta tarjeta = tarjetaRepository.buscarPorId(new TarjetaId(tarjetaIdStr))
-                .orElseThrow(() -> new IllegalArgumentException("La tarjeta no existe"));
-                
-        ((TarjetaChecklist) tarjeta).getChecklist().removeIf(item -> item.getTexto().equals(textoItem));
+        Tarjeta tarjeta = obtenerTarjeta(tarjetaIdStr);
+        tarjeta.eliminarItemChecklist(textoItem);
         tarjetaRepository.guardar(tarjeta);
     }
     
     @Transactional
     public void cambiarEstadoCompletada(String tarjetaIdStr, boolean estado) {
-        Tarjeta tarjeta = tarjetaRepository.buscarPorId(new TarjetaId(tarjetaIdStr))
-                .orElseThrow(() -> new IllegalArgumentException("La tarjeta no existe"));
-                
+        Tarjeta tarjeta = obtenerTarjeta(tarjetaIdStr);
         tarjeta.setCompletada(estado);
         tarjetaRepository.guardar(tarjeta);
     }
-    
 }

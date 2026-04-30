@@ -11,6 +11,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.effect.ColorAdjust?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.Tooltip?>
 
 <StackPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="pds.gestiontareas.ui.TableroController"
@@ -23,39 +24,68 @@
     </Region>
     
     <Region styleClass="filtro-gris" />
+    
     <BorderPane>
 
+        <!-- AGRUPAMOS LAS DOS BARRAS EN LA PARTE SUPERIOR -->
         <top>
-		    <HBox spacing="15" styleClass="barra-superior">
-		        <Button text="⬅ Cambiar Tablero" onAction="#volverAlMenuPrincipal" 
-		                styleClass="btn-bloquear" 
-		                style="-fx-background-color: #607d8b; -fx-text-fill: white; -fx-cursor: hand;"/>
-		        
-		        <Label fx:id="lblNombreTablero" text="Cargando..." styleClass="titulo"/>
-		        
-		        <Region HBox.hgrow="ALWAYS"/>
-            
-	            <Label text="Filtrar:" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-alignment: center; -fx-padding: 5 0 0 0;"/>
-                <Label text="Buscar:" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-alignment: center; -fx-padding: 5 0 0 0;"/>
-                <TextField fx:id="txtFiltroTexto" promptText="Nombre de tarea..." onKeyReleased="#aplicarFiltroTexto" style="-fx-pref-width: 140;"/>
+            <!-- Añadimos un pequeño sombreado (drop shadow) al VBox para separarlo del fondo -->
+            <VBox style="-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 8, 0, 0, 2);">
+                
+                <!-- 1. CABECERA PRINCIPAL: Casi negra (0.85 opacidad), para dar peso y jerarquía -->
+                <HBox spacing="15" styleClass="barra-superior" style="-fx-alignment: center-left; -fx-padding: 10 20; -fx-background-color: rgba(15, 15, 15, 0.85);">
+                    
+                    <Button text="⬅ Cambiar Tablero" onAction="#volverAlMenuPrincipal" 
+                            styleClass="btn-bloquear" 
+                            style="-fx-background-color: rgba(255, 255, 255, 0.15); -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"/>
+                    
+                    <Label fx:id="lblNombreTablero" text="Cargando..." styleClass="titulo" style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                    
+                    <Region HBox.hgrow="ALWAYS"/>
+                    
+                   	<!-- Botón Bloquear -->
+					<Button fx:id="btnBloquear" text="Bloquear Tablero" onAction="#alternarBloqueoUI"
+					        style="-fx-background-color: rgba(255, 255, 255, 0.15); 
+					               -fx-text-fill: white; 
+					               -fx-font-weight: bold; 
+					               -fx-cursor: hand; 
+					               -fx-font-size: 14px; 
+					               -fx-padding: 10 20 10 20;" />                
+					
+					<!-- Botón Historial -->
+					<Button fx:id="btnHistorial" text="Historial" onAction="#mostrarHistorial"
+					        style="-fx-background-color: rgba(0, 121, 191, 0.7); 
+					               -fx-text-fill: white; 
+					               -fx-font-weight: bold; 
+					               -fx-cursor: hand; 
+					               -fx-font-size: 14px; 
+					               -fx-padding: 10 20 10 20;" />                   	
+                
+                    <Button text="👤+" onAction="#compartirTableroUI" style="-fx-background-color: #28a745; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-background-radius: 50em; -fx-min-width: 40px; -fx-min-height: 40px; -fx-cursor: hand;">
+                        <tooltip><javafx.scene.control.Tooltip text="Compartir Tablero"/></tooltip>
+                    </Button>
+                </HBox>
 
-                <Label text=" Color:" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-alignment: center; -fx-padding: 5 0 0 0;"/>
-                <ColorPicker fx:id="colorPickerFiltro" onAction="#aplicarFiltro" style="-fx-background-color: white;"/>
-                <Button text="Sin Etiquetas" onAction="#filtrarSinEtiquetas" style="-fx-background-color: #9e9e9e; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"/>
-                <Button text="✕ Limpiar" onAction="#limpiarFiltro" style="-fx-background-color: #ef5350; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"/>
-                
-                <Region HBox.hgrow="ALWAYS"/>
-                
-                <Button fx:id="btnBloquear" text="Bloquear Tablero" styleClass="btn-bloquear" onAction="#alternarBloqueoUI"/>                
-				<Button fx:id="btnHistorial" text="Historial" styleClass="btn-bloquear" style="-fx-background-color: #0079bf; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" onAction="#mostrarHistorial"/>                        	
-            
-                <Button text="👤+" onAction="#compartirTableroUI" style="-fx-background-color: #28a745; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-background-radius: 50em; -fx-min-width: 40px; -fx-min-height: 40px; -fx-cursor: hand;">
-                    <tooltip><javafx.scene.control.Tooltip text="Compartir Tablero"/></tooltip>
-                </Button>
-                
-            </HBox>
+                <!-- 2. SUB-CABECERA: Gris Pizarra (más claro que la cabecera) y con mayor opacidad (0.85) -->
+                <HBox spacing="15" style="-fx-padding: 8 20; -fx-background-color: rgba(45, 52, 60, 0.85); -fx-alignment: center-left; -fx-border-color: rgba(255, 255, 255, 0.08); -fx-border-width: 1 0 1 0;">
+                    <Label text="🔍 Filtros:" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px;"/>
+                    
+                    <Label text="Buscar texto:" style="-fx-text-fill: rgba(255,255,255,0.9); -fx-font-weight: bold; -fx-padding: 3 0 0 0;"/>
+                    <TextField fx:id="txtFiltroTexto" promptText="Nombre de tarea..." onKeyReleased="#aplicarFiltroTexto" style="-fx-pref-width: 200;"/>
+
+                    <Label text="Color de etiqueta:" style="-fx-text-fill: rgba(255,255,255,0.9); -fx-font-weight: bold; -fx-padding: 3 0 0 0;"/>
+                    <ColorPicker fx:id="colorPickerFiltro" onAction="#aplicarFiltro" style="-fx-background-color: white;"/>
+                    
+                    <Region HBox.hgrow="ALWAYS"/>
+                    
+                    <Button text="Sin Etiquetas" onAction="#filtrarSinEtiquetas" style="-fx-background-color: rgba(0, 0, 0, 0.25); -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"/>
+                    
+                    <Button text="✕ Limpiar Filtros" onAction="#limpiarFiltro" style="-fx-background-color: rgba(239, 83, 80, 0.9); -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"/>
+                </HBox>
+            </VBox>
         </top>
 
+        <!-- ZONA CENTRAL: Listas y Tarjetas -->
         <center>
             <ScrollPane fitToWidth="true" fitToHeight="false" styleClass="scroll">
                 <content>

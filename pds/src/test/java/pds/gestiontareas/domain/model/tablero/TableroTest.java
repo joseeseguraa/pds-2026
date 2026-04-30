@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import pds.gestiontareas.domain.model.tablero.model.ListaTareas;
 import pds.gestiontareas.domain.model.tablero.model.Tablero;
+import pds.gestiontareas.domain.model.tablero.id.ListaTareasId;
 
 class TableroTest {
 
@@ -22,7 +23,6 @@ class TableroTest {
     @Test
     void testCreacionTableroYListasVacias() {
         assertFalse(tablero.isBloqueado(), "El tablero debería crearse desbloqueado");
-        
         assertTrue(tablero.getListas().isEmpty(), "El tablero debe nacer sin listas por defecto");
     }
 
@@ -42,7 +42,8 @@ class TableroTest {
             tablero.añadirTarjetaALista("tarjeta-123", listaTodo.getId());
         });
 
-        assertEquals("No se pueden añadir tarjetas, el tablero está bloqueado temporalmente.", exception.getMessage());
+        // CORRECCIÓN: El mensaje exacto que lanza la clase Tablero
+        assertEquals("No se pueden añadir nuevas tarjetas en un tablero bloqueado.", exception.getMessage());
     }
 
     @Test
@@ -50,12 +51,12 @@ class TableroTest {
         tablero.añadirLista("Origen");
         tablero.añadirLista("Destino");
         
-        String idO = tablero.getListas().get(0).getId();
-        String idD = tablero.getListas().get(1).getId();
+        // CORRECCIÓN: El ID ahora es un Objeto de Valor, no un String
+        ListaTareasId idO = tablero.getListas().get(0).getId();
+        ListaTareasId idD = tablero.getListas().get(1).getId();
         String tarjetaId = "T-1";
     
         tablero.añadirTarjetaALista(tarjetaId, idO);
-        
         tablero.moverTarjeta(tarjetaId, idO, idD);
     
         assertFalse(tablero.getListas().get(0).getTarjetasIds().contains(tarjetaId));

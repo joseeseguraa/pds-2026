@@ -6,6 +6,7 @@ import pds.gestiontareas.domain.model.tarjeta.model.Etiqueta;
 import pds.gestiontareas.domain.model.tarjeta.model.Tarjeta;
 import pds.gestiontareas.domain.model.tarjeta.model.TarjetaChecklist;
 import pds.gestiontareas.domain.model.tarjeta.model.ItemChecklist;
+import pds.gestiontareas.domain.model.tarjeta.model.PermisoAcceso;
 import pds.gestiontareas.domain.model.tarjeta.model.TarjetaTarea;
 import pds.gestiontareas.domain.model.tarjeta.repository.TarjetaRepository;
 import pds.gestiontareas.domain.model.tarjeta.id.TarjetaId;
@@ -15,7 +16,9 @@ import pds.gestiontareas.infrastructure.jpa.entity.ItemChecklistEmbeddable;
 import pds.gestiontareas.infrastructure.jpa.entity.TarjetaEntity;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -40,7 +43,7 @@ public class TarjetaRepositoryJPAImpl implements TarjetaRepository {
         entity.setTipo(tarjeta instanceof TarjetaChecklist ? "CHECKLIST" : "TAREA");
         
         List<EtiquetaEmbeddable> embeddables = tarjeta.getEtiquetas().stream()
-                .map(e -> new EtiquetaEmbeddable(e.getNombre(), e.getColor()))
+                .map(e -> new EtiquetaEmbeddable(e.getNombre(), e.getColorHex()))
                 .collect(Collectors.toList());
         entity.setEtiquetas(embeddables);
         
@@ -51,9 +54,10 @@ public class TarjetaRepositoryJPAImpl implements TarjetaRepository {
             }
         }
         entity.setChecklist(checklistEntities);
-        entity.setListasVisitadas(new ArrayList<>(tarjeta.getListasVisitadas()));
         
-        java.util.Map<String, String> permisosEntity = new java.util.HashMap<>();
+        entity.setListasVisitadas(new ArrayList<>(tarjeta.getHistorialVisitas()));
+        
+        Map<String, String> permisosEntity = new HashMap<>();
         tarjeta.getPermisosUsuarios().forEach((email, permiso) -> permisosEntity.put(email, permiso.name()));
         entity.setPermisosUsuarios(permisosEntity);
         
@@ -69,7 +73,8 @@ public class TarjetaRepositoryJPAImpl implements TarjetaRepository {
                 tarjeta = new TarjetaChecklist(new TarjetaId(entity.getId()), entity.getTitulo(), entity.getDescripcion());
                 if (entity.getChecklist() != null) {
                     for (ItemChecklistEmbeddable itemEmb : entity.getChecklist()) {
-                        ((TarjetaChecklist) tarjeta).getChecklist().add(new ItemChecklist(itemEmb.getTexto(), itemEmb.isCompletado()));
+                        tarjeta.añadirItemChecklist(itemEmb.getTexto());
+                        tarjeta.actualizarEstadoItemChecklist(itemEmb.getTexto(), itemEmb.isCompletado());
                     }
                 }
             } else {
@@ -77,7 +82,7 @@ public class TarjetaRepositoryJPAImpl implements TarjetaRepository {
             }
             
             if (entity.isCompletada()) {
-                tarjeta.marcarCompletada();
+                tarjeta.completar(); 
             }
             
             if (entity.getEtiquetas() != null) {
@@ -94,7 +99,7 @@ public class TarjetaRepositoryJPAImpl implements TarjetaRepository {
             
             if (entity.getPermisosUsuarios() != null) {
                 entity.getPermisosUsuarios().forEach((email, permisoStr) -> {
-                    tarjeta.asignarPermiso(email, pds.gestiontareas.domain.model.tarjeta.model.PermisoAcceso.valueOf(permisoStr));
+                    tarjeta.asignarPermiso(email, PermisoAcceso.valueOf(permisoStr));
                 });
             }
             
@@ -106,5 +111,4 @@ public class TarjetaRepositoryJPAImpl implements TarjetaRepository {
     public void eliminar(TarjetaId id) {
         jpaRepository.deleteById(id.getValor());
     }
-    
 }

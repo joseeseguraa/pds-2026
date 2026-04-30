@@ -5,50 +5,68 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public abstract class Tarjeta {
+
     protected TarjetaId id;
     protected String titulo;
     protected String descripcion;
     protected boolean completada;
     protected List<Etiqueta> etiquetas;
-    protected List<String> listasVisitadas;
-    protected Map<String, PermisoAcceso> permisosUsuarios = new HashMap<>();
+    protected List<String> historialVisitas; 
+    protected Map<String, PermisoAcceso> permisosUsuarios;
 
     public Tarjeta(String titulo, String descripcion) {
-        this.id = new TarjetaId();
+        this.id = new TarjetaId(UUID.randomUUID().toString());
         this.titulo = titulo;
         this.descripcion = descripcion;
         this.completada = false;
         this.etiquetas = new ArrayList<>();
-        this.listasVisitadas = new ArrayList<>();
+        this.historialVisitas = new ArrayList<>();
+        this.permisosUsuarios = new HashMap<>();
     }
 
-    public void marcarCompletada() { this.completada = true; }
-    public void setCompletada(boolean estado) { this.completada = estado; }
-    public void añadirEtiqueta(Etiqueta etiqueta) { this.etiquetas.add(etiqueta); }
-    public String getDescripcion() { return descripcion; }
-    public void cambiarDescripcion(String nuevaDescripcion) { this.descripcion = nuevaDescripcion; }
-    public List<Etiqueta> getEtiquetas() { return etiquetas; }
-    public boolean tieneEtiqueta(String colorHex) { return etiquetas.stream().anyMatch(e -> e.getColor().equals(colorHex)); }
-    public void quitarEtiqueta(String colorHex) { etiquetas.removeIf(e -> e.getColor().equals(colorHex)); }
-    public TarjetaId getId() { return id; }
-    public String getTitulo() { return titulo; }
-    public boolean isCompletada() { return completada; }
-    public List<String> getListasVisitadas() { return listasVisitadas; }
-    public Map<String, PermisoAcceso> getPermisosUsuarios() { return permisosUsuarios; }
-    public void setPermisosUsuarios(Map<String, PermisoAcceso> permisosUsuarios) { this.permisosUsuarios = permisosUsuarios; }
-    
-    public void registrarVisita(String nombreLista) {
-        if (!this.listasVisitadas.contains(nombreLista)) {
-            this.listasVisitadas.add(nombreLista);
+    protected Tarjeta() {}
+
+    // --- MÉTODOS DE NEGOCIO (DDD) ---
+
+    public void cambiarDescripcion(String nuevaDescripcion) {
+        this.descripcion = nuevaDescripcion;
+    }
+
+    public void completar() {
+        this.completada = true;
+    }
+
+    public void reabrir() {
+        this.completada = false;
+    }
+
+    public void añadirEtiqueta(Etiqueta etiqueta) {
+        if (!tieneEtiqueta(etiqueta.getColorHex())) {
+            this.etiquetas.add(etiqueta);
         }
     }
-    
-    public boolean haVisitado(String nombreLista) {
-        return this.listasVisitadas.contains(nombreLista);
+
+    public void quitarEtiqueta(String colorHex) {
+        this.etiquetas.removeIf(e -> e.getColorHex().equals(colorHex));
     }
-    
+
+    public boolean tieneEtiqueta(String colorHex) {
+        return this.etiquetas.stream().anyMatch(e -> e.getColorHex().equals(colorHex));
+    }
+
+    public void registrarVisita(String nombreLista) {
+        if (!this.historialVisitas.contains(nombreLista)) {
+            this.historialVisitas.add(nombreLista);
+        }
+    }
+
+    public boolean haVisitadoLista(String nombreLista) {
+        return this.historialVisitas.contains(nombreLista);
+    }
+
     public void asignarPermiso(String email, PermisoAcceso permiso) {
         this.permisosUsuarios.put(email, permiso);
     }
@@ -62,4 +80,30 @@ public abstract class Tarjeta {
         if (emailUsuario.equalsIgnoreCase(emailDueño)) return true;
         return permisosUsuarios.get(emailUsuario) == PermisoAcceso.ESCRITURA;
     }
+
+    // --- MÉTODOS PARA CHECKLIST (Comportamiento por defecto) ---
+
+    public void añadirItemChecklist(String texto) {
+        throw new UnsupportedOperationException("Esta tarjeta no soporta checklists.");
+    }
+
+    public void actualizarEstadoItemChecklist(String textoItem, boolean estaCompletado) {
+        throw new UnsupportedOperationException("Esta tarjeta no soporta checklists.");
+    }
+
+    public void eliminarItemChecklist(String textoItem) {
+        throw new UnsupportedOperationException("Esta tarjeta no soporta checklists.");
+    }
+
+    // --- GETTERS & SETTERS ---
+    
+    public TarjetaId getId() { return id; }
+    public String getTitulo() { return titulo; }
+    public String getDescripcion() { return descripcion; }
+    public boolean isCompletada() { return completada; }
+    public void setCompletada(boolean completada) { this.completada = completada; }
+    
+    public List<Etiqueta> getEtiquetas() { return new ArrayList<>(etiquetas); } 
+    public List<String> getHistorialVisitas() { return new ArrayList<>(historialVisitas); }
+    public Map<String, PermisoAcceso> getPermisosUsuarios() { return new HashMap<>(permisosUsuarios); }
 }

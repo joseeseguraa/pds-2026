@@ -6,14 +6,13 @@ import javafx.scene.control.*;
 import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+
 import pds.gestiontareas.application.TableroService;
 import pds.gestiontareas.application.TarjetaService;
+import pds.gestiontareas.application.dto.ItemChecklistDTO;
+import pds.gestiontareas.application.dto.TarjetaDTO;
 import pds.gestiontareas.domain.model.tablero.id.TableroId;
-import pds.gestiontareas.domain.model.tarjeta.model.Etiqueta;
-import pds.gestiontareas.domain.model.tarjeta.model.ItemChecklist;
-import pds.gestiontareas.domain.model.tarjeta.model.Tarjeta;
-import pds.gestiontareas.domain.model.tarjeta.model.TarjetaChecklist;
-import pds.gestiontareas.domain.model.tablero.model.Tablero;
+import pds.gestiontareas.domain.model.tablero.model.Tablero; 
 
 public class TarjetaUIComponent extends VBox {
 
@@ -47,11 +46,13 @@ public class TarjetaUIComponent extends VBox {
 
     private void construirVistaBasica() {
         HBox contenedorEtiquetas = new HBox(5);
-        Tarjeta datosTarjeta = tarjetaService.obtenerTarjeta(tarjetaId);
         
-        for (Etiqueta etiqueta : datosTarjeta.getEtiquetas()) {
+        // Usamos el DTO para no acoplar la UI al Dominio
+        TarjetaDTO datosTarjeta = tarjetaService.obtenerDatosTarjeta(tarjetaId);
+        
+        for (String colorHex : datosTarjeta.getColoresEtiquetas()) {
             Region rectColor = new Region();
-            rectColor.setStyle("-fx-background-color: " + etiqueta.getColor() + "; -fx-min-width: 40; -fx-min-height: 8; -fx-background-radius: 4;");
+            rectColor.setStyle("-fx-background-color: " + colorHex + "; -fx-min-width: 40; -fx-min-height: 8; -fx-background-radius: 4;");
             contenedorEtiquetas.getChildren().add(rectColor);
         }
 
@@ -63,7 +64,8 @@ public class TarjetaUIComponent extends VBox {
     }
 
     private void abrirMenuEdicion() {
-        Tarjeta datosActualizados = tarjetaService.obtenerTarjeta(tarjetaId);
+        // Usamos el DTO
+        TarjetaDTO datosActualizados = tarjetaService.obtenerDatosTarjeta(tarjetaId);
 
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Detalles de la Tarjeta");
@@ -84,14 +86,15 @@ public class TarjetaUIComponent extends VBox {
         cajaDesc.getChildren().addAll(lblDesc, txtDesc);
 
         VBox cajaChecklistCompleta = new VBox(8);
-        if (datosActualizados instanceof TarjetaChecklist) {
-            TarjetaChecklist tarjetaChecklist = (TarjetaChecklist) datosActualizados;
+        
+        // Comprobamos el boolean del DTO en lugar de hacer un instanceOf de la Entidad
+        if (datosActualizados.isEsChecklist()) {
             Label lblChecklist = new Label("Checklist (Subtareas):");
             lblChecklist.setStyle("-fx-font-weight: bold; -fx-text-fill: #172b4d;");
             
             VBox listaSubtareas = new VBox(8);
-            if (tarjetaChecklist.getChecklist() != null) {
-                for (ItemChecklist item : tarjetaChecklist.getChecklist()) {
+            if (datosActualizados.getItemsChecklist() != null) {
+                for (ItemChecklistDTO item : datosActualizados.getItemsChecklist()) {
                     listaSubtareas.getChildren().add(crearFilaSubtarea(item.getTexto(), item.isCompletado(), listaSubtareas));
                 }
             }
@@ -145,6 +148,8 @@ public class TarjetaUIComponent extends VBox {
         Label lblPermisos = new Label("Gestionar Permisos de Usuario:");
         lblPermisos.setStyle("-fx-font-weight: bold; -fx-text-fill: #172b4d;");
 
+        // Nota arquitectónica: Idealmente los usuarios compartidos deberían venir en el TableroDTO,
+        // pero usamos la Entidad temporalmente para evitar reescribir tus DTOs en este paso.
         Tablero tableroActual = tableroService.obtenerTablero(miTableroId);
         if (tableroActual.getUsuariosCompartidos() != null && !tableroActual.getUsuariosCompartidos().isEmpty()) {
             ComboBox<String> comboUsuarios = new ComboBox<>();
@@ -174,7 +179,6 @@ public class TarjetaUIComponent extends VBox {
                     return;
                 }
                 try {
-                    // LLamada al servicio usando las variables de esta clase
                     tableroService.asignarPermisoTarjeta(miTableroId, tarjetaId, txtEmailDueño.getText().trim(), comboUsuarios.getValue(), comboNiveles.getValue());
                     
                     Alert info = new Alert(Alert.AlertType.INFORMATION);
@@ -230,8 +234,6 @@ public class TarjetaUIComponent extends VBox {
         Button botonEliminarInterfaz = (Button) dialog.getDialogPane().lookupButton(btnEliminar);
         if (botonEliminarInterfaz != null) {
             botonEliminarInterfaz.addEventFilter(ActionEvent.ACTION, e -> {
-                tableroService.eliminarTarjetaDeLista(miTableroId, nombreListaOrigen, tarjetaId);
-                tarjetaService.eliminarTarjeta(tarjetaId);
                 tableroService.eliminarTarjetaCompletamente(miTableroId, nombreListaOrigen, tarjetaId, textoTarea);
                 dialog.close();
                 mainController.recargarTablero();

@@ -31,7 +31,7 @@ public class App extends Application {
 
         Parent root = fxmlLoader.load();
 
-        Scene scene = new Scene(root, 1500, 800); 
+        Scene scene = new Scene(root, 1024, 768); 
 
         primaryStage.setMinWidth(900);  
         primaryStage.setMinHeight(650); 

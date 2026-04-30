@@ -11,6 +11,7 @@ import pds.gestiontareas.infrastructure.jpa.entity.ListaTareasEntity;
 import pds.gestiontareas.infrastructure.jpa.entity.TableroEntity;
 import pds.gestiontareas.infrastructure.jpa.entity.TrazaAccionEmbeddable;
 import pds.gestiontareas.domain.model.tablero.id.TableroId;
+import pds.gestiontareas.domain.model.tablero.id.ListaTareasId;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,13 +27,11 @@ public class TableroRepositoryJPAImpl implements TableroRepository {
     }
 
     @Override
-    
     public void guardar(Tablero tablero) {
         TableroEntity entity = new TableroEntity();
         entity.setId(tablero.getId().getValor());
         entity.setNombre(tablero.getNombre());
         entity.setBloqueado(tablero.isBloqueado());
-        
         entity.setEmailCreador(tablero.getCreador());
         entity.setUsuariosCompartidos(new java.util.HashSet<>(tablero.getUsuariosCompartidos()));
         
@@ -40,17 +39,13 @@ public class TableroRepositoryJPAImpl implements TableroRepository {
         
         for (ListaTareas listaDominio : tablero.getListas()) {
             ListaTareasEntity listaEntity = new ListaTareasEntity();
-            listaEntity.setId(listaDominio.getId());
+            listaEntity.setId(listaDominio.getId().getValor());
             listaEntity.setNombre(listaDominio.getTitulo());
-            
             listaEntity.setTarjetasIds(new ArrayList<>(listaDominio.getTarjetasIds()));
-            
             listaEntity.setLimiteTarjetas(listaDominio.getLimiteTarjetas());
             listaEntity.setListasPrecedentesRequeridas(new ArrayList<>(listaDominio.getListasPrecedentesRequeridas()));
-            
             listasEntities.add(listaEntity);
         }
-        
         entity.setListas(listasEntities);
         
         List<TrazaAccionEmbeddable> historialEntities = new ArrayList<>();
@@ -74,13 +69,12 @@ public class TableroRepositoryJPAImpl implements TableroRepository {
         }
 
         TableroEntity entity = entityOpt.get();
-
         List<ListaTareas> listasDominio = new ArrayList<>();
         
         if (entity.getListas() != null) {
             for (ListaTareasEntity listaEntity : entity.getListas()) {
                 ListaTareas lista = new ListaTareas(
-                    listaEntity.getId(),
+                    new ListaTareasId(listaEntity.getId()),
                     listaEntity.getNombre(),
                     listaEntity.getTarjetasIds()
                 );
@@ -95,23 +89,23 @@ public class TableroRepositoryJPAImpl implements TableroRepository {
             }
         }
 
-        TableroId tableroId = new TableroId(entity.getId()); 
+        List<String> usuariosDb = entity.getUsuariosCompartidos() != null 
+                                  ? new ArrayList<>(entity.getUsuariosCompartidos()) 
+                                  : new ArrayList<>();
 
         Tablero tableroReconstruido = new Tablero(
-            tableroId,
+            new TableroId(entity.getId()),
             entity.getNombre(),
             entity.getEmailCreador(),
             entity.isBloqueado(),
-            listasDominio
+            listasDominio,
+            usuariosDb
         );
-        
-        if (entity.getUsuariosCompartidos() != null) {
-            tableroReconstruido.setUsuariosCompartidos(new java.util.HashSet<>(entity.getUsuariosCompartidos()));
-        }
 
         if (entity.getHistorial() != null) {
+            tableroReconstruido.limpiarHistorial(); 
             for (TrazaAccionEmbeddable trazaEmb : entity.getHistorial()) {
-                tableroReconstruido.getHistorial().add(new TrazaAccion(trazaEmb.getDescripcion()));
+                tableroReconstruido.registrarAccionEnHistorial(trazaEmb.getDescripcion());
             }
         }
 

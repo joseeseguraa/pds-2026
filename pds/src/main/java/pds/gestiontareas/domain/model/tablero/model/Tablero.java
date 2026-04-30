@@ -1,129 +1,62 @@
 package pds.gestiontareas.domain.model.tablero.model;
 
 import pds.gestiontareas.domain.model.tablero.id.TableroId;
-
+import pds.gestiontareas.domain.model.tablero.id.ListaTareasId;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.HashSet;
-import java.util.Set;
-
-/**
- * Agregado Raíz: Tablero.
- * DECISIÓN DE DISEÑO (DDD): Se ha decidido no modelar el "Usuario" como un Agregado 
- * independiente. Dado que los requisitos solo exigen un email para la creación 
- * y no hay gestión de perfiles o autenticación compleja, el creador se modela 
- * simplemente como un String asociado a este Tablero, 
- * respetando el principio YAGNI (You Aren't Gonna Need It).
- */
+import java.util.UUID;
 
 public class Tablero {
+
     private TableroId id;
     private String nombre;
     private String creador;
     private boolean bloqueado;
     private List<ListaTareas> listas;
     private List<TrazaAccion> historial;
-    private Set<String> usuariosCompartidos = new HashSet<>();
+    private List<String> usuariosCompartidos;
 
     public Tablero(String nombre, String creador) {
-        this.id = new TableroId();
+        this.id = new TableroId(UUID.randomUUID().toString());
         this.nombre = nombre;
         this.creador = creador;
         this.bloqueado = false;
         this.listas = new ArrayList<>();
         this.historial = new ArrayList<>();
-        
-        registrarAccion("Tablero '" + nombre + "' creado por " + creador);
+        this.usuariosCompartidos = new ArrayList<>();
+        registrarAccionEnHistorial("Tablero creado por " + creador);
     }
-    
-    public Tablero(TableroId id, String nombre, String creador, boolean bloqueado, List<ListaTareas> listas) {
+
+    public Tablero(TableroId id, String nombre, String creador, boolean bloqueado, List<ListaTareas> listas, List<String> usuariosCompartidos) {
         this.id = id;
         this.nombre = nombre;
         this.creador = creador;
         this.bloqueado = bloqueado;
         this.listas = listas;
         this.historial = new ArrayList<>();
+        this.usuariosCompartidos = new ArrayList<>(usuariosCompartidos);
     }
 
-    public void bloquear() {
-        this.bloqueado = true;
-        registrarAccion("El tablero ha sido bloqueado.");
-    }
+    protected Tablero() {}
 
-    public void desbloquear() {
-        this.bloqueado = false;
-        registrarAccion("El tablero ha sido desbloqueado.");
-    }
-
-    public void añadirLista(String tituloLista) {
-        ListaTareas nuevaLista = new ListaTareas(tituloLista);
-        this.listas.add(nuevaLista);
-        registrarAccion("Añadida nueva lista: " + tituloLista);
-    }
-
-    public void añadirTarjetaALista(String tarjetaId, String listaId) {
-        if (this.bloqueado) {
-            throw new IllegalStateException("No se pueden añadir tarjetas, el tablero está bloqueado temporalmente.");
-        }
-        
-        ListaTareas lista = buscarListaPorId(listaId)
-            .orElseThrow(() -> new IllegalArgumentException("La lista no existe en este tablero"));
-            
-        lista.añadirTarjeta(tarjetaId);
-        registrarAccion("Tarjeta añadida a la lista: " + lista.getTitulo());
-    }
-
-    private Optional<ListaTareas> buscarListaPorId(String listaId) {
-        return listas.stream().filter(l -> l.getId().equals(listaId)).findFirst();
-    }
-    
-    private void registrarAccion(String descripcion) {
-        this.historial.add(new TrazaAccion(descripcion));
-    }
-    
-    public void moverTarjeta(String tarjetaId, String listaOrigenId, String listaDestinoId) {
-        ListaTareas origen = buscarListaPorId(listaOrigenId)
-                .orElseThrow(() -> new IllegalArgumentException("La lista de origen no existe"));
-                
-        ListaTareas destino = buscarListaPorId(listaDestinoId)
-                .orElseThrow(() -> new IllegalArgumentException("La lista de destino no existe"));
-
-        origen.quitarTarjeta(tarjetaId);
-        destino.añadirTarjeta(tarjetaId);
-
-        registrarAccion("Tarjeta movida de '" + origen.getTitulo() + "' a '" + destino.getTitulo() + "'");
-    }
-    
-    public void eliminarLista(String nombreLista) {
-        boolean removida = this.listas.removeIf(lista -> lista.getTitulo().equals(nombreLista));
-        if (removida) {
-            registrarAccion("Se eliminó la lista completa '" + nombreLista + "'.");
-        }
-    }
-
-    public void eliminarTarjetaDeLista(String nombreLista, String tarjetaId) {
-        for (ListaTareas lista : this.listas) {
-            if (lista.getTitulo().equals(nombreLista)) {
-                lista.getTarjetasIds().remove(tarjetaId);
-                registrarAccion("Se eliminó una tarjeta de la lista '" + nombreLista + "'.");
-                break;
-            }
-        }
-    }
-    
-    public void compartirCon(String emailUsuario) {
-        if (this.creador.equalsIgnoreCase(emailUsuario)) return; // El creador ya es dueño
-        this.usuariosCompartidos.add(emailUsuario);
-        registrarAccion("Tablero compartido con el usuario: " + emailUsuario);
-    }
+    public void bloquear() { this.bloqueado = true; registrarAccionEnHistorial("Tablero bloqueado"); }
+    public void desbloquear() { this.bloqueado = false; registrarAccionEnHistorial("Tablero desbloqueado"); }
+    public void añadirLista(String tituloLista) { validarTableroNoBloqueado("No se pueden añadir listas en un tablero bloqueado."); this.listas.add(new ListaTareas(tituloLista)); registrarAccionEnHistorial("Se añadió la lista: " + tituloLista); }
+    public void eliminarLista(String tituloLista) { validarTableroNoBloqueado("No se pueden eliminar listas en un tablero bloqueado."); this.listas.removeIf(l -> l.getTitulo().equals(tituloLista)); registrarAccionEnHistorial("Se eliminó la lista: " + tituloLista); }
+    public void añadirTarjetaALista(String tarjetaId, ListaTareasId listaId) { validarTableroNoBloqueado("No se pueden añadir nuevas tarjetas en un tablero bloqueado."); ListaTareas lista = obtenerListaPorId(listaId); lista.añadirTarjeta(tarjetaId); registrarAccionEnHistorial("Tarjeta " + tarjetaId + " añadida a la lista " + lista.getTitulo()); }
+    public void moverTarjeta(String tarjetaId, ListaTareasId origenId, ListaTareasId destinoId) { ListaTareas origen = obtenerListaPorId(origenId); ListaTareas destino = obtenerListaPorId(destinoId); origen.quitarTarjeta(tarjetaId); destino.añadirTarjeta(tarjetaId); registrarAccionEnHistorial("Tarjeta " + tarjetaId + " movida de " + origen.getTitulo() + " a " + destino.getTitulo()); }
+    public void eliminarTarjetaDeLista(String nombreLista, String tarjetaId) { validarTableroNoBloqueado("No se pueden eliminar tarjetas en un tablero bloqueado."); ListaTareas lista = this.listas.stream().filter(l -> l.getTitulo().equals(nombreLista)).findFirst().orElseThrow(() -> new IllegalArgumentException("Lista no encontrada")); lista.quitarTarjeta(tarjetaId); registrarAccionEnHistorial("Tarjeta " + tarjetaId + " eliminada de la lista " + nombreLista); }
+    public void compartirCon(String email) { if (email == null || email.trim().isEmpty()) { throw new IllegalArgumentException("El email no puede estar vacío"); } if (!this.usuariosCompartidos.contains(email)) { this.usuariosCompartidos.add(email); registrarAccionEnHistorial("Tablero compartido con el usuario: " + email); } }
+    public void registrarAccionEnHistorial(String mensaje) { this.historial.add(new TrazaAccion(mensaje)); }
+    public void limpiarHistorial() { this.historial.clear(); registrarAccionEnHistorial("Se vació el historial de acciones manualmente."); }
+    private void validarTableroNoBloqueado(String mensajeError) { if (this.bloqueado) { throw new IllegalStateException(mensajeError); } }
+    private ListaTareas obtenerListaPorId(ListaTareasId listaId) { return this.listas.stream().filter(l -> l.getId().equals(listaId)).findFirst().orElseThrow(() -> new IllegalArgumentException("Lista no encontrada en el tablero.")); }
     
     public TableroId getId() { return id; }
     public String getNombre() { return nombre; }
-    public boolean isBloqueado() { return bloqueado; }
-    public List<ListaTareas> getListas() { return listas; }
-    public List<TrazaAccion> getHistorial() { return historial; }
     public String getCreador() { return creador; }
-    public Set<String> getUsuariosCompartidos() { return usuariosCompartidos; }
-    public void setUsuariosCompartidos(Set<String> usuariosCompartidos) { this.usuariosCompartidos = usuariosCompartidos; }
+    public boolean isBloqueado() { return bloqueado; }
+    public List<ListaTareas> getListas() { return new ArrayList<>(listas); } 
+    public List<TrazaAccion> getHistorial() { return new ArrayList<>(historial); }
+    public List<String> getUsuariosCompartidos() { return new ArrayList<>(usuariosCompartidos); }
 }
